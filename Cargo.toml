@@ -1,0 +1,20 @@
+[package]
+name = "iocore"
+version = "0.0.0"
+edition = "2021"
+description = "Indispensable Core Utilities"
+documentation = "https://docs.rs/iocore"
+readme = "README.md"
+homepage = "https://github.com/github-py/iocore"
+exclude = ["tests", "docs"]
+license = "GPL-3.0-or-later"
+
+[dependencies]
+glob = "0.3.1"
+regex = { version = "1.9.6", features = ["use_std", "pattern", "logging", "perf-dfa-full"] }
+shellexpand = { version = "3.1.0", features = ["full"] }
+walkdir = "2.4.0"
+
+[lib]
+name = "iocore"
+path = "src/lib.rs"
