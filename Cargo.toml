@@ -6,7 +6,7 @@ description = "Indispensable Core Utilities"
 documentation = "https://docs.rs/iocore"
 readme = "README.md"
 homepage = "https://github.com/github-py/iocore"
-exclude = ["tests", "docs"]
+exclude = ["tests"]
 license = "GPL-3.0-or-later"
 
 [dependencies]
