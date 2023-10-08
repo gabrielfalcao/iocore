@@ -65,5 +65,10 @@ pub fn get_or_create_parent_dir(path: &str) -> Result<String, Exception> {
 pub fn open_write(target: &str) -> Result<std::fs::File, Exception> {
     let abspath = absolute_path(target)?;
     get_or_create_parent_dir(abspath.to_str().unwrap())?;
-    Ok(OpenOptions::new().create(true).write(true).mode(0o600).open(target)?)
+    Ok(OpenOptions::new().create(true).write(true).mode(0o600).open(&abspath)?)
+}
+
+pub fn open_read(target: &str) -> Result<std::fs::File, Exception> {
+    let abspath = absolute_path(target)?;
+    Ok(OpenOptions::new().read(true).open(abspath)?)
 }
