@@ -4,6 +4,7 @@ use std::net::AddrParseError;
 #[derive(Debug)]
 pub enum Exception {
     IOError(std::io::Error),
+    WalkDirError(walkdir::Error),
     FileSystemError(String),
     InvalidUtf8(FromUtf8Error),
     AddrParseError(AddrParseError),
@@ -14,6 +15,7 @@ impl std::fmt::Display for Exception {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Exception::IOError(e) => write!(f, "I/O Exception: {}", e),
+            Exception::WalkDirError(e) => write!(f, "WalkDirError: {}", e),
             Exception::FileSystemError(e) => write!(f, "FileSystemError: {}", e),
             Exception::IOCoreException(e) => write!(f, "IOCoreException: {}", e),
             Exception::InvalidUtf8(s) => write!(f, "InvalidUtf8: {}", s),
@@ -27,6 +29,11 @@ impl std::error::Error for Exception {}
 impl From<std::io::Error> for Exception {
     fn from(e: std::io::Error) -> Self {
         Exception::IOError(e)
+    }
+}
+impl From<walkdir::Error> for Exception {
+    fn from(e: walkdir::Error) -> Self {
+        Exception::WalkDirError(e)
     }
 }
 impl From<FromUtf8Error> for Exception {
