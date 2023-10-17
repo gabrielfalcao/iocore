@@ -1,5 +1,5 @@
-use std::fs;
 use shellexpand;
+use std::fs;
 use std::fs::OpenOptions;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
@@ -7,10 +7,9 @@ use walkdir::WalkDir;
 
 use crate::exceptions::Exception;
 
-
-pub fn rsvfilematch(
+pub fn rsvfilematch<M: FnMut(&PathBuf) -> bool>(
     filenames: Vec<String>,
-    matcher: fn(&PathBuf) -> bool,
+    mut matcher: M,
 ) -> Result<Vec<PathBuf>, Exception> {
     let mut result = Vec::<PathBuf>::new();
     for filename in if filenames.len() == 0 {
