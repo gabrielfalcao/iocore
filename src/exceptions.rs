@@ -1,10 +1,10 @@
-use std::string::FromUtf8Error;
 use std::net::AddrParseError;
+use std::string::FromUtf8Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Exception {
-    IOError(std::io::Error),
-    WalkDirError(walkdir::Error),
+    IOError(String),
+    WalkDirError(String),
     FileSystemError(String),
     InvalidUtf8(FromUtf8Error),
     AddrParseError(AddrParseError),
@@ -28,12 +28,12 @@ impl std::error::Error for Exception {}
 
 impl From<std::io::Error> for Exception {
     fn from(e: std::io::Error) -> Self {
-        Exception::IOError(e)
+        Exception::IOError(format!("{}", e))
     }
 }
 impl From<walkdir::Error> for Exception {
     fn from(e: walkdir::Error) -> Self {
-        Exception::WalkDirError(e)
+        Exception::WalkDirError(format!("{}", e))
     }
 }
 impl From<FromUtf8Error> for Exception {

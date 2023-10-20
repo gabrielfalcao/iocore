@@ -1,3 +1,4 @@
+use crate::plant::PathRelative;
 use shellexpand;
 use std::fs;
 use std::fs::OpenOptions;
@@ -6,7 +7,6 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::exceptions::Exception;
-
 pub fn rsvfilematch<M: FnMut(&PathBuf) -> bool>(
     filenames: Vec<String>,
     mut matcher: M,
@@ -31,7 +31,7 @@ pub fn rsvfilematch<M: FnMut(&PathBuf) -> bool>(
                     continue;
                 }
                 if matcher(&path.to_path_buf()) {
-                    result.push(path.to_path_buf());
+                    result.push(path.to_path_buf().relative_wherewith(path));
                 }
             }
         } else {
@@ -116,7 +116,7 @@ pub fn open_read(target: &str) -> Result<std::fs::File, Exception> {
 }
 
 #[cfg(test)]
-mod tests {
+mod functests {
     use super::*;
     use std::io::Write;
 

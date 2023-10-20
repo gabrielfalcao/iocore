@@ -19,5 +19,5 @@ pub const PROTO: [u64; 21] = [
     0x7f800,
     0xffff800,
     0xfffffc1ff,
-    0x0
+    0x0,
 ];
