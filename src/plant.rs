@@ -5,6 +5,12 @@ pub struct Node {
     source: String,
 }
 
+impl std::fmt::Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.source)
+    }
+}
+
 impl Node {
     pub fn from(source: &str) -> Self {
         Node {
@@ -25,9 +31,12 @@ impl Node {
             .to_string()
     }
 }
-pub trait StringPath: Clone {
+
+pub trait StringPath: Clone + Sized {
     fn relative_to(&self, ancestor: &str) -> String;
+    fn tostring(&self) -> String;
 }
+
 
 pub trait PathRelative: StringPath {
     fn relative_wherewith(&self, ancestor: &Path) -> PathBuf;
@@ -36,6 +45,9 @@ pub trait PathRelative: StringPath {
 impl StringPath for Node {
     fn relative_to(&self, ancestor: &str) -> String {
         self.to(ancestor)
+    }
+    fn tostring(&self) -> String {
+        format!("{}", self.source)
     }
 }
 
@@ -48,6 +60,9 @@ impl PathRelative for Node {
 impl StringPath for String {
     fn relative_to(&self, ancestor: &str) -> String {
         Node::from(self).to(ancestor)
+    }
+    fn tostring(&self) -> String {
+        self.clone()
     }
 }
 impl PathRelative for String {
@@ -62,6 +77,10 @@ impl StringPath for &str {
     fn relative_to(&self, ancestor: &str) -> String {
         Node::from(self).to(ancestor)
     }
+    fn tostring(&self) -> String {
+        format!("{}", self)
+    }
+
 }
 
 impl PathRelative for &str {
@@ -76,6 +95,10 @@ impl StringPath for PathBuf {
     fn relative_to(&self, ancestor: &str) -> String {
         Node::from(&format!("{}", self.display())).to(ancestor)
     }
+    fn tostring(&self) -> String {
+        format!("{}", self.display())
+    }
+
 }
 impl PathRelative for PathBuf {
     fn relative_wherewith(&self, ancestor: &Path) -> PathBuf {
@@ -89,6 +112,10 @@ impl StringPath for &Path {
     fn relative_to(&self, ancestor: &str) -> String {
         Node::from(&format!("{}", self.display())).to(ancestor)
     }
+    fn tostring(&self) -> String {
+        format!("{}", self.display())
+    }
+
 }
 impl PathRelative for &Path {
     fn relative_wherewith(&self, ancestor: &Path) -> PathBuf {
