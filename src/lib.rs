@@ -26,4 +26,4 @@ pub mod sr;
 
 pub use coreio::*;
 pub use exceptions::*;
-pub use plant::Node;
+pub use plant::*;
