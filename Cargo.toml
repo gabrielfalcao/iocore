@@ -1,6 +1,6 @@
 [package]
 name = "iocore"
-version = "0.101.0"
+version = "0.110.0"
 edition = "2021"
 description = "Indispensable Core Utilities"
 documentation = "https://docs.rs/iocore"
@@ -12,6 +12,8 @@ license = "GPL-3.0-or-later"
 [dependencies]
 glob = "0.3.1"
 regex = { version = "1.9.6", features = ["use_std", "pattern", "logging", "perf-dfa-full"] }
+sanitation = "0.0.0"
+serde = { version = "1.0.190", features = ["derive", "alloc", "rc"] }
 shellexpand = { version = "3.1.0", features = ["full"] }
 walkdir = "2.4.0"
 
