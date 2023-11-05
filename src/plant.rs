@@ -6,7 +6,7 @@ use crate::coreio::absolute_path;
 use crate::exceptions::Exception;
 
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NodeMeta {
     pub path: NodePath,
     pub mode: u32,
@@ -91,7 +91,7 @@ impl From<String> for NodeMeta {
         NodeMeta::new(p.into())
     }
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Node {
     pub path: NodePath,
     pub meta: Option<NodeMeta>
@@ -147,7 +147,7 @@ impl From<&Path> for Node {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NodePath(String);
 
 impl NodePath {
