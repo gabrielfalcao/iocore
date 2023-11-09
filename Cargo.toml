@@ -10,7 +10,7 @@ exclude = ["tests"]
 license = "GPL-3.0-or-later"
 
 [dependencies]
-chrono = { version = "0.4.31", features = ["alloc", "rustc-serialize", "serde"] }
+chrono = { version = "0.4.31", features = ["alloc", "serde"] }
 glob = "0.3.1"
 regex = { version = "1.9.6", features = ["use_std", "pattern", "logging", "perf-dfa-full"] }
 sanitation = "0.0.0"
