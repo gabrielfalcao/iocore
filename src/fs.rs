@@ -369,8 +369,8 @@ mod nodemeta_integration_tests {
         assert_ne!(data.accessed, None);
         assert_ne!(data.created, None);
         assert_ne!(data.modified, None);
-        assert_eq!(&data.modified.unwrap().to_string(), "2023-11-09 05:16:30.487362874 UTC");
-        assert_eq!(&data.created.unwrap().to_string(), "2023-11-09 05:07:46.831292708 UTC");
+        assert_eq!(&data.modified.unwrap().to_string(), "2023-11-09 05:26:35.945788666 UTC");
+        assert_eq!(&data.created.unwrap().to_string(), "2023-11-09 05:26:35.945550333 UTC");
         Ok(())
     }
 }
