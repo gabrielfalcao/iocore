@@ -1,4 +1,5 @@
 use std::net::AddrParseError;
+use std::env::VarError;
 use std::string::FromUtf8Error;
 
 #[derive(Debug, Clone)]
@@ -7,6 +8,7 @@ pub enum Exception {
     WalkDirError(String),
     FileSystemError(String),
     InvalidUtf8(FromUtf8Error),
+    EnvironmentVarError(VarError),
     AddrParseError(AddrParseError),
     IOCoreException(String),
 }
@@ -19,6 +21,7 @@ impl std::fmt::Display for Exception {
             Exception::FileSystemError(e) => write!(f, "FileSystemError: {}", e),
             Exception::IOCoreException(e) => write!(f, "IOCoreException: {}", e),
             Exception::InvalidUtf8(s) => write!(f, "InvalidUtf8: {}", s),
+            Exception::EnvironmentVarError(s) => write!(f, "EnvironmentVarError: {}", s),
             Exception::AddrParseError(s) => write!(f, "Invalid Network Address: {}", s),
         }
     }
@@ -34,6 +37,11 @@ impl From<std::io::Error> for Exception {
 impl From<walkdir::Error> for Exception {
     fn from(e: walkdir::Error) -> Self {
         Exception::WalkDirError(format!("{}", e))
+    }
+}
+impl From<VarError> for Exception {
+    fn from(e: VarError) -> Self {
+        Exception::EnvironmentVarError(e)
     }
 }
 impl From<FromUtf8Error> for Exception {
