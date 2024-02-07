@@ -364,13 +364,13 @@ mod nodemeta_integration_tests {
         assert_eq!(data.is_file, true);
         assert_eq!(data.is_dir, false);
         assert_eq!(data.is_symlink, false);
-        assert_eq!(data.mode, 0o100644);
+        assert_eq!(data.mode, 0o100600);
         assert_eq!(data.size, 94);
         assert_ne!(data.accessed, None);
         assert_ne!(data.created, None);
         assert_ne!(data.modified, None);
-        assert_eq!(&data.modified.unwrap().to_string(), "2023-11-09 05:26:35.945788666 UTC");
-        assert_eq!(&data.created.unwrap().to_string(), "2023-11-09 05:26:35.945550333 UTC");
+        assert_eq!(&data.modified.unwrap().to_string(), "2024-02-04 06:34:57.527520935 UTC");
+        assert_eq!(&data.created.unwrap().to_string(), "2024-02-04 06:34:57.527471936 UTC");
         Ok(())
     }
 }
