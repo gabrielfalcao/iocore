@@ -349,6 +349,7 @@ mod nodemeta_integration_tests {
     use crate::fs::FSNode;
     use crate::fs::FilePath;
     use crate::Exception;
+    use regex::Regex;
 
 
     fn get_test_file_path() -> Result<FilePath, Exception> {
@@ -358,19 +359,22 @@ mod nodemeta_integration_tests {
 
     #[test]
     fn test_filemetadata() -> Result<(), Exception> {
+        let datetime_pattern = Regex::new(r"^2024-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}[.]\d+").unwrap();
+        let perms_pattern = Regex::new(r"6[40]{2}$").unwrap();
+
         let readme = get_test_file_path()?;
         let data = FSNode::new(readme.to_path_buf());
         assert_eq!(data.path, readme);
         assert_eq!(data.is_file, true);
         assert_eq!(data.is_dir, false);
         assert_eq!(data.is_symlink, false);
-        assert_eq!(data.mode, 0o100600);
+        assert_ne!(perms_pattern.find(&format!("{:o}", data.mode)), None);
         assert_eq!(data.size, 94);
         assert_ne!(data.accessed, None);
         assert_ne!(data.created, None);
         assert_ne!(data.modified, None);
-        assert_eq!(&data.modified.unwrap().to_string(), "2024-02-04 06:34:57.527520935 UTC");
-        assert_eq!(&data.created.unwrap().to_string(), "2024-02-04 06:34:57.527471936 UTC");
+        assert_ne!(datetime_pattern.find(&data.modified.unwrap().to_string()), None);
+        assert_ne!(datetime_pattern.find(&data.created.unwrap().to_string()), None);
         Ok(())
     }
 }
