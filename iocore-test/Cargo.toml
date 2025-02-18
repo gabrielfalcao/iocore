@@ -1,0 +1,22 @@
+[package]
+name = "iocore-test"
+version = "0.1.0"
+edition = "2021"
+autoexamples = false
+autobenches = false
+
+[package.metadata]
+cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps"]
+targets = [
+    "aarch64-apple-darwin",
+]
+
+
+[lib]
+name = "iocore_test"
+path = "iocore-test/lib.rs"
+doctest = false
+bench = false
+
+[dependencies]
+iocore = { path = ".." }

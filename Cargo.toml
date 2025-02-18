@@ -1,25 +1,39 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "iocore"
-version = "0.110.1"
+version = "0.1000.0"
 edition = "2021"
 description = "Indispensable Core Utilities"
 documentation = "https://docs.rs/iocore"
 readme = "README.md"
-homepage = "https://github.com/github-py/iocore"
-exclude = ["tests"]
-license = "GPL-3.0-or-later"
+homepage = "https://github.com/gabrielfalcao/iocore"
+license = "MIT"
+default-target = "aarch64-apple-darwin"
 
-[dependencies]
+[package.metadata]
+cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps", "-Zcustom_mir"]
+targets = [
+"aarch64-apple-darwin",
+"aarch64-unknown-linux-gnu",
+"x86_64-apple-darwin",
+"x86_64-unknown-linux-gnu",
+]
+
+[target.'cfg(unix)'.dependencies]
 chrono = { version = "0.4.31", features = ["alloc", "serde"] }
 glob = "0.3.1"
-sanitation = "0.0.0"
+lazy_static = "1.4.0"
+sanitation = { version = "1.0.0" }
 serde = { version = "1.0.190", features = ["derive", "alloc", "rc"] }
-shellexpand = { version = "3.1.0", features = ["full"] }
-walkdir = "2.4.0"
+regex = { version = "1.10.3", features = ["use_std"] }
+thread-group = { path = "../thread-group" }
+filetime = "0.2.25"
 
 [dev-dependencies]
-regex = { version = "1.10.3", features = ["use_std"] }
+clap = { version = "4.5.20", features = ["derive"] }
+iocore-test = { path = "./iocore-test" }
 
 [lib]
 name = "iocore"
-path = "src/lib.rs"
+path = "iocore/lib.rs"
