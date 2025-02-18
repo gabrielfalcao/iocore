@@ -11,7 +11,7 @@ pub mod t;
 pub use entry::Entry;
 pub use info::Info;
 pub use t::*;
-use thread_group::ThreadGroup;
+use thread_groups::ThreadGroup;
 
 use crate::exceptions::Exception;
 use crate::fs::{Path, PathType, Size};

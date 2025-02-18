@@ -120,8 +120,8 @@ impl From<(crate::fs::FileSystemError, crate::Path)> for Exception {
         exc.into()
     }
 }
-impl From<thread_group::Error> for Exception {
-    fn from(e: thread_group::Error) -> Self {
+impl From<thread_groups::Error> for Exception {
+    fn from(e: thread_groups::Error) -> Self {
         Exception::ThreadGroupError(e.to_string())
     }
 }
