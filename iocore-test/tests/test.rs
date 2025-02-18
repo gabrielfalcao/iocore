@@ -1,9 +1,9 @@
-use iocore_test::{dir_path, path_to_test_file, seq_bytes, Path};
+use iocore_test::{folder_path, path_to_test_file, seq_bytes, Path};
 
 #[test]
 fn test_path_to_test_file() {
     assert_eq!(
-        path_to_test_file!("test_path_to_test_file"),
+        path_to_test_file!("test_path_to_test_file.6"),
         Path::new(file!()).with_filename("test_path_to_test_file.6")
     );
     assert!(path_to_test_file!("test_path_to_test_file").exists());
@@ -19,7 +19,7 @@ fn test_seq_bytes() {
 }
 
 #[test]
-fn test_dir_path() {
-    assert_eq!(dir_path!(), Path::new(file!()).parent().unwrap());
-    assert_eq!(dir_path!("test.rs"), Path::new(file!()));
+fn test_folder_path() {
+    assert_eq!(folder_path!(), Path::new(file!()).parent().unwrap());
+    assert_eq!(folder_path!("test.rs"), Path::new(file!()));
 }

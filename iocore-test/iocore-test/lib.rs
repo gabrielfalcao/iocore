@@ -1,9 +1,13 @@
-pub use iocore::*;
+//! iocore_test is a testing tool for crates that utilize the
+//! [`iocore`] crate.
 
-pub fn empty_path<D: std::fmt::Display>(
+use iocore::*;
+
+/// `empty_path` creates an empty file and returns a [`iocore::Path`]
+pub fn empty_path(
     path: impl Into<Path>,
-    name: D,
-    extension: Option<D>,
+    name: impl std::fmt::Display,
+    extension: Option<impl std::fmt::Display>,
 ) -> Path {
     let test_file = path.into().with_filename(name.to_string());
     let test_file = match extension {
@@ -28,6 +32,9 @@ pub fn empty_path<D: std::fmt::Display>(
     test_file
 }
 
+/// `seq_bytes` returns a [`Vec<u8>`] containing a sequence of [`u8`]
+/// bytes and applying the remainder operation if `count` is longer
+/// than `u8::MAX`
 pub fn seq_bytes(count: usize) -> Vec<u8> {
     (0..count)
         .map(|n| {
@@ -41,16 +48,18 @@ pub fn seq_bytes(count: usize) -> Vec<u8> {
         .collect()
 }
 
+/// `path_to_test_file` returns the path to an empty file within the same dir as the test file which calls it
 #[macro_export]
 macro_rules! path_to_test_file {
     ($name:literal) => {
-        iocore_test::empty_path(file!(), $name, Some(&format!("{}", line!())))
+        iocore_test::empty_path(file!(), $name, iocore::Path::new($name).extension())
     };
     ($name:literal, $extension:literal) => {
         iocore_test::empty_path(file!(), $name, Some($extension))
     };
 }
 
+/// `folder_path` returns the path to the test file which calls it
 #[macro_export]
 macro_rules! folder_path {
     () => {
@@ -61,6 +70,7 @@ macro_rules! folder_path {
     };
 }
 
+/// `test_folder_parent_path` returns the parent folder of the test file which calls it
 #[macro_export]
 macro_rules! test_folder_parent_path {
     () => {

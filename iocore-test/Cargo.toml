@@ -1,15 +1,17 @@
 [package]
 name = "iocore-test"
-version = "0.1.0"
+version = "0.1000.0"
 edition = "2021"
 autoexamples = false
 autobenches = false
+description = "companion testing library for the iocore crate"
+documentation = "https://docs.rs/iocore-test"
+readme = "README.md"
+homepage = "https://github.com/gabrielfalcao/iocore"
+license = "MIT"
 
 [package.metadata]
 cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps"]
-targets = [
-    "aarch64-apple-darwin",
-]
 
 
 [lib]
@@ -19,4 +21,4 @@ doctest = false
 bench = false
 
 [dependencies]
-iocore = { path = ".." }
+iocore = { version = "0.1000.0" }
