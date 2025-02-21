@@ -697,7 +697,7 @@ impl Path {
             for child in self.list()? {
                 match child.delete() {
                     Ok(_) => {},
-                    Err(_) => {}
+                    Err(_) => {},
                 };
             }
             match std::fs::remove_dir(self.path()) {
@@ -885,10 +885,10 @@ impl Path {
     pub fn without_extension(&self) -> Path {
         let mut parts = self
             .extension()
-            .map(|e| self.to_string().split(e.as_str()).map(String::from).collect::<Vec<String>>())
-            .unwrap_or(vec![self.to_string(), String::new()]);
+            .map(|e| self.name().split(e.as_str()).map(String::from).collect::<Vec<String>>())
+            .unwrap_or(vec![self.name(), String::new()]);
         parts.pop();
-        Path::new(parts.join(self.extension().unwrap_or_default().as_str()))
+        self.parent().unwrap().join(parts.join(self.extension().unwrap_or_default().as_str()))
     }
 
     pub fn with_extension(&self, extension: impl ::std::fmt::Display) -> Path {
