@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
-use iocore::{walk_dir, Exception, Node, Path, WalkProgressHandler};
+use iocore::{walk_dir, Error, Node, Path, WalkProgressHandler};
 
-fn main() -> Result<(), iocore::Exception> {
+fn main() -> Result<(), iocore::Error> {
     let opt = Opt::parse();
     let matcher = opt.matcher();
 
@@ -66,7 +66,7 @@ impl WalkProgressHandler for SimpleMatcher {
         }
     }
 
-    fn error(&mut self, _: &Path, y: Exception) -> Option<Exception> {
+    fn error(&mut self, _: &Path, y: Error) -> Option<Error> {
         Some(y)
         //(!self.opt.suppress_errors).then_some(y)
     }

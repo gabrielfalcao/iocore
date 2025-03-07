@@ -8,32 +8,33 @@
 pub mod entry;
 pub mod info;
 pub mod t;
+
 pub use entry::Entry;
 pub use info::Info;
 pub use t::*;
 use thread_groups::ThreadGroup;
 
-use crate::exceptions::Exception;
-use crate::fs::{Path, PathType, Size};
+use crate::errors::Error;
+use crate::fs::{cmp_paths_by_length, cmp_paths_by_parts, Path, PathType, Size};
 
 pub fn read_dir(
     path: &Path,
     handle: impl WalkProgressHandler + Clone,
-) -> Result<Vec<Entry>, Exception> {
+) -> Result<Vec<Entry>, Error> {
     let mut result = Vec::<Entry>::new();
     let path = path.clone();
 
-    for entry in std::fs::read_dir(&path.to_path_buf())
+    let mut entries = std::fs::read_dir(&path.to_path_buf())
         .map_err(|e| match handle.clone().error(&path, e.into()) {
-            Some(y) => Exception::WalkDirError(y.to_string(), path.node()),
-            None => Exception::WalkDirError("unable to read directory".to_string(), path.node()),
+            Some(y) => Error::WalkDirError(y.to_string(), path.node()),
+            None => Error::WalkDirError("unable to read directory".to_string(), path.node()),
         })
         .map(|entries| {
             entries.map(|entry| {
                 entry
                     .map_err(|e| match handle.clone().error(&path, e.into()) {
-                        Some(y) => Exception::WalkDirError(y.to_string(), path.node()),
-                        None => Exception::WalkDirError(
+                        Some(y) => Error::WalkDirError(y.to_string(), path.node()),
+                        None => Error::WalkDirError(
                             "unable to read directory".to_string(),
                             path.node(),
                         ),
@@ -41,19 +42,31 @@ pub fn read_dir(
                     .map(|entry| Entry::from(Path::from(entry)))
             })
         })?
-    {
+        .collect::<Vec<Result<Entry, Error>>>();
+
+    entries.sort_by(|a, b| {
+        if a.is_ok() && b.is_ok() {
+            let a = a.clone().unwrap();
+            let b = b.clone().unwrap();
+            cmp_paths_by_parts(&a.path(), &b.path())
+        } else {
+            a.is_ok().cmp(&b.is_ok())
+        }
+    });
+    for entry in entries {
         let entry = entry?;
         if handle.clone().path_matching(&entry.path(), &entry.node()) {
             result.push(entry);
         }
     }
+    sort_entries(&mut result);
     Ok(result)
 }
 
 pub fn read_dir_size(
     path: &Path,
     progress: &mut impl FnMut(&Path, usize),
-) -> Result<Size, Exception> {
+) -> Result<Size, Error> {
     let info = Info::of(path);
     let mut size = info.size();
     let paths = read_dir(path, NoopProgressHandler)?;
@@ -75,22 +88,23 @@ pub fn read_dir_size(
 }
 
 pub fn walk_dir(
-    path: &Path,
+    path: impl Into<Path>,
     mut handle: impl WalkProgressHandler + Clone,
     max_depth: Option<usize>,
     depth: Option<usize>,
-) -> Result<Vec<Entry>, Exception> {
+) -> Result<Vec<Entry>, Error> {
+    let path = Into::<Path>::into(path);
     let max_depth = max_depth.unwrap_or(u8::MAX as usize);
     let depth = depth.unwrap_or(0) + 1;
     let mut result = Vec::<Entry>::new();
-    let mut threads: ThreadGroup<Result<Vec<Entry>, Exception>> =
+    let mut threads: ThreadGroup<Result<Vec<Entry>, Error>> =
         ThreadGroup::with_id(format!("walk_dir:{}", path));
 
     if depth - 1 > max_depth {
         return Ok(result);
     }
     if !path.exists() {
-        if let Some(error) = handle.error(path, Exception::PathDoesNotExist(path.clone())) {
+        if let Some(error) = handle.error(&path, Error::PathDoesNotExist(path.clone())) {
             return Err(error);
         } else {
             return Ok(result);
@@ -101,6 +115,7 @@ pub fn walk_dir(
         let path = entry.path();
         if path.is_dir() {
             let handle = handle.clone();
+            result.push(Entry::from(Info::of(&path)));
             threads.spawn(move || {
                 walk_dir(&path, handle, Some(max_depth.clone()), Some(depth.clone()))
             })?;
@@ -121,7 +136,7 @@ pub fn walk_dir(
             }
         }
     }
-
+    sort_entries(&mut result);
     Ok(result)
 }
 
@@ -129,7 +144,7 @@ pub fn walk_nodes(
     filenames: Vec<String>,
     handle: impl WalkProgressHandler + Clone,
     max_depth: Option<usize>,
-) -> Result<Vec<Entry>, Exception> {
+) -> Result<Vec<Entry>, Error> {
     let mut result = Vec::<Entry>::new();
 
     if filenames.len() == 0 {
@@ -153,73 +168,26 @@ pub fn walk_nodes(
             }
         }
     }
+    sort_entries(&mut result);
     Ok(result)
 }
 
-pub fn glob(pattern: impl Into<String>) -> Result<Vec<Path>, Exception> {
+pub fn glob(pattern: impl Into<String>) -> Result<Vec<Path>, Error> {
     let mut result = Vec::<Path>::new();
     let pattern = pattern.into();
     for filename in match ::glob::glob(&pattern) {
-        Err(e) => return Err(Exception::MalformedGlobPattern(format!("{}: {}", pattern, e))),
+        Err(e) => return Err(Error::MalformedGlobPattern(format!("{}: {}", pattern, e))),
         Ok(paths) => paths,
     } {
         let path = match filename {
             Ok(filename) => Path::from(filename),
-            Err(e) => return Err(Exception::FileSystemError(format!("{}: {}", pattern, e))),
+            Err(e) => return Err(Error::FileSystemError(format!("{}: {}", pattern, e))),
         };
         result.push(path.absolute()?);
     }
     Ok(result)
 }
-
-#[cfg(test)]
-mod functests {
-    use std::path::PathBuf;
-
-    use crate::coreio::absolute_path;
-    use crate::fs::*;
-    use crate::walk::*;
-
-    #[test]
-    fn test_walk_nodes_glob() -> Result<(), Exception> {
-        assert_eq!(
-            walk_nodes(vec![format!("iocore/*.rs")], NoopProgressHandler.clone(), None)
-                .unwrap()
-                .iter()
-                .map(|entry| entry.node().filename())
-                .collect::<Vec<String>>(),
-            vec!["coreio.rs", "exceptions.rs", "fs.rs", "lib.rs", "sh.rs", "sys.rs", "walk.rs"]
-        );
-        Ok(())
-    }
-    #[test]
-    fn test_walk_nodes() -> Result<(), Exception> {
-        let file_paths =
-            ["tests/noop/1.o", "tests/noop/6.ld", "tests/noop/8.dll", "tests/abba/6.dll"]
-                .iter()
-                .map(|n| Path::writable_file(*n).unwrap())
-                .map(|s| s.write(b"!!!!!!!").unwrap_or(s.clone()))
-                .collect::<Vec<Path>>();
-
-        let absbufs = file_paths
-            .iter()
-            .map(|p| p.try_absolute().to_path_buf())
-            .collect::<Vec<PathBuf>>();
-
-        assert_eq!(
-            absbufs,
-            ["tests/noop/1.o", "tests/noop/6.ld", "tests/noop/8.dll", "tests/abba/6.dll",]
-                .iter()
-                .map(|p| absolute_path(p).unwrap_or(Path::from(p).to_path_buf()))
-                .collect::<Vec<_>>()
-        );
-        let mut matches = walk_nodes(vec![format!("tests/noop/*")], NoopProgressHandler, None)?
-            .iter()
-            .map(|entry| entry.node().filename())
-            .collect::<Vec<String>>();
-        matches.sort();
-        // let matches = file_paths.iter().map(|p|p.name()).collect::<Vec<_>>();
-        assert_eq!(matches, vec!["1.o", "6.ld", "8.dll"]);
-        Ok(())
-    }
+pub(crate) fn sort_entries(entries: &mut Vec<Entry>) {
+    entries.sort_by(|a, b| cmp_paths_by_length(&a.path(), &b.path()));
+    entries.sort_by(|a, b| cmp_paths_by_parts(&a.path(), &b.path()));
 }

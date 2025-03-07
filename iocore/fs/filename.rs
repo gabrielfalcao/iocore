@@ -8,7 +8,7 @@
 
 use std::path::MAIN_SEPARATOR_STR;
 
-use crate::exceptions::{Exception, Result};
+use crate::errors::{Error, Result};
 use crate::Path;
 
 pub struct FileName {
@@ -19,7 +19,7 @@ impl FileName {
     pub fn new(name: impl Into<String>) -> Result<FileName> {
         let value: String = value.into();
         if value.contains(MAIN_SEPARATOR_STR) {
-            Err(Exception::MalformedFileName(format!(
+            Err(Error::MalformedFileName(format!(
                 "FileName contains path separator {:#?}: {:#?}",
                 MAIN_SEPARATOR_STR, &value
             )))
@@ -30,7 +30,7 @@ impl FileName {
 
     pub fn validate(&self) -> Result<()> {
         if self.value.contains(MAIN_SEPARATOR_STR) {
-            Err(Exception::MalformedFileName(format!(
+            Err(Error::MalformedFileName(format!(
                 "FileName contains path separator {:#?}: {:#?}",
                 MAIN_SEPARATOR_STR, &self.value
             )))
@@ -44,7 +44,7 @@ impl FileName {
         if !path.exists() || path.is_dir() {
             Ok(path.join(&self.value))
         } else {
-            Err(Exception::PathConversionError(format!(
+            Err(Error::PathConversionError(format!(
                 "in joining {:#?}: {:#?} exists and is not a diretory",
                 &self, path
             )))

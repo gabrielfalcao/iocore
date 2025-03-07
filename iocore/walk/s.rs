@@ -6,7 +6,7 @@
 //   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
 //     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 
-use crate::exceptions::Exception;
+use crate::errors::Error;
 use crate::fs::Path;
 use crate::walk::t::{Depth, MaxDepth};
 
@@ -25,10 +25,10 @@ pub enum Action {
 pub fn iter_dir(
     path: &Path,
     path_handler: impl FnMut(&Path) -> Action,
-    error_handler: impl FnMut(&Path, Exception) -> Respond,
+    error_handler: impl FnMut(&Path, Error) -> Respond,
     max_depth: Option<MaxDepth>,
     depth: Option<Depth>,
-) -> Result<(), Exception> {
+) -> Result<(), Error> {
     let mut result = Vec::<Path>::new();
 
     if path.is_dir() {
@@ -44,7 +44,7 @@ pub fn iter_dir(
             }
         }
     } else if let Some(exc) =
-        error_handler(path, Exception::FileSystemError(format!("not a directory: {}", path)))
+        error_handler(path, Error::FileSystemError(format!("not a directory: {}", path)))
     {
         return Err(exc);
     }
@@ -63,10 +63,10 @@ pub fn walk_nodes<M, E>(
     matcher: &mut M,
     error_handler: &mut E,
     max_depth: Option<MaxDepth>,
-) -> Result<Vec<Node>, Exception>
+) -> Result<Vec<Node>, Error>
 where
     M: FnMut(&Path, &Node) -> bool,
-    E: FnMut(&Path, Exception) -> Option<Exception>,
+    E: FnMut(&Path, Error) -> Option<Error>,
 {
     let mut result = Vec::<Node>::new();
 
@@ -84,7 +84,7 @@ where
                     Err(e) => {
                         if let Some(exc) = &error_handler(
                             &cwd.join(&filename),
-                            Exception::FileSystemError(format!("expanding {}: {}", filename, e)),
+                            Error::FileSystemError(format!("expanding {}: {}", filename, e)),
                         ) {
                             return Err(exc.clone());
                         } else {
@@ -128,7 +128,7 @@ mod functests {
     use crate::walk::*;
 
     #[test]
-    fn test_walk_nodes_glob() -> Result<(), Exception> {
+    fn test_walk_nodes_glob() -> Result<(), Error> {
         assert_eq!(
             walk_nodes(
                 vec![format!("src/*.rs")],
@@ -140,12 +140,12 @@ mod functests {
             .iter()
             .map(|node| node.filename())
             .collect::<Vec<String>>(),
-            vec!["coreio.rs", "exceptions.rs", "fs.rs", "lib.rs", "sys.rs", "walk.rs"]
+            vec!["coreio.rs", "errors.rs", "fs.rs", "lib.rs", "sys.rs", "walk.rs"]
         );
         Ok(())
     }
     #[test]
-    fn test_walk_nodes() -> Result<(), Exception> {
+    fn test_walk_nodes() -> Result<(), Error> {
         let file_paths =
             ["tests/noop/1.o", "tests/noop/6.ld", "tests/noop/8.dll", "tests/abba/6.dll"]
                 .iter()

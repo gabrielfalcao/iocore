@@ -196,34 +196,53 @@ impl FileSystemException {
 impl From<(FileSystemError, crate::Path, String)> for FileSystemException {
     fn from(fp: (FileSystemError, crate::Path, String)) -> FileSystemException {
         let (error, path, e) = fp;
-        let em = format!("{} error on {:#?}: {}", error, path, e);
+        let error_description = format!("{} error on {:#?}: {}", error, path, e);
         match error {
             FileSystemError::UnexpectedPathType =>
-                FileSystemException::UnexpectedPathType(path, em),
-            FileSystemError::PathDoesNotExist => FileSystemException::PathDoesNotExist(path, em),
-            FileSystemError::PathIsNotSymlink => FileSystemException::PathIsNotSymlink(path, em),
-            FileSystemError::CreateFile => FileSystemException::CreateFileError(path, em),
-            FileSystemError::CreateSymlink => FileSystemException::CreateSymlinkError(path, em),
-            FileSystemError::OpenFile => FileSystemException::OpenFileError(path, em),
-            FileSystemError::AppendFile => FileSystemException::AppendFileError(path, em),
-            FileSystemError::SetMode => FileSystemException::SetModeError(path, em),
-            FileSystemError::NonWritablePath => FileSystemException::NonWritablePathError(path, em),
-            FileSystemError::NonReadablePath => FileSystemException::NonReadablePathError(path, em),
+                FileSystemException::UnexpectedPathType(path, error_description),
+            FileSystemError::PathDoesNotExist =>
+                FileSystemException::PathDoesNotExist(path, error_description),
+            FileSystemError::PathIsNotSymlink =>
+                FileSystemException::PathIsNotSymlink(path, error_description),
+            FileSystemError::CreateFile =>
+                FileSystemException::CreateFileError(path, error_description),
+            FileSystemError::CreateSymlink =>
+                FileSystemException::CreateSymlinkError(path, error_description),
+            FileSystemError::OpenFile =>
+                FileSystemException::OpenFileError(path, error_description),
+            FileSystemError::AppendFile =>
+                FileSystemException::AppendFileError(path, error_description),
+            FileSystemError::SetMode => FileSystemException::SetModeError(path, error_description),
+            FileSystemError::NonWritablePath =>
+                FileSystemException::NonWritablePathError(path, error_description),
+            FileSystemError::NonReadablePath =>
+                FileSystemException::NonReadablePathError(path, error_description),
             FileSystemError::NonExecutablePath =>
-                FileSystemException::NonExecutablePathError(path, em),
-            FileSystemError::WriteFile => FileSystemException::WriteFileError(path, em),
-            FileSystemError::WriteFlush => FileSystemException::WriteFlushError(path, em),
-            FileSystemError::MoveFile => FileSystemException::MoveFileError(path, em),
-            FileSystemError::ReadFile => FileSystemException::ReadFileError(path, em),
-            FileSystemError::DeleteFile => FileSystemException::DeleteFileError(path, em),
-            FileSystemError::DeleteDirectory => FileSystemException::DeleteDirectoryError(path, em),
-            FileSystemError::AbsolutePath => FileSystemException::AbsolutePathError(path, em),
-            FileSystemError::CanonicalPath => FileSystemException::CanonicalPathError(path, em),
-            FileSystemError::ReadSymlink => FileSystemException::ReadSymlinkError(path, em),
-            FileSystemError::CreateDirectory => FileSystemException::CreateDirectoryError(path, em),
+                FileSystemException::NonExecutablePathError(path, error_description),
+            FileSystemError::WriteFile =>
+                FileSystemException::WriteFileError(path, error_description),
+            FileSystemError::WriteFlush =>
+                FileSystemException::WriteFlushError(path, error_description),
+            FileSystemError::MoveFile =>
+                FileSystemException::MoveFileError(path, error_description),
+            FileSystemError::ReadFile =>
+                FileSystemException::ReadFileError(path, error_description),
+            FileSystemError::DeleteFile =>
+                FileSystemException::DeleteFileError(path, error_description),
+            FileSystemError::DeleteDirectory =>
+                FileSystemException::DeleteDirectoryError(path, error_description),
+            FileSystemError::AbsolutePath =>
+                FileSystemException::AbsolutePathError(path, error_description),
+            FileSystemError::CanonicalPath =>
+                FileSystemException::CanonicalPathError(path, error_description),
+            FileSystemError::ReadSymlink =>
+                FileSystemException::ReadSymlinkError(path, error_description),
+            FileSystemError::CreateDirectory =>
+                FileSystemException::CreateDirectoryError(path, error_description),
             FileSystemError::UnsafeFileContent =>
-                FileSystemException::UnsafeFileContentError(path, em),
-            FileSystemError::NoAncestorPath => FileSystemException::NoAncestorPathError(path, em),
+                FileSystemException::UnsafeFileContentError(path, error_description),
+            FileSystemError::NoAncestorPath =>
+                FileSystemException::NoAncestorPathError(path, error_description),
         }
     }
 }
@@ -231,34 +250,53 @@ impl From<(FileSystemError, crate::Path, String)> for FileSystemException {
 impl From<(FileSystemError, crate::Path)> for FileSystemException {
     fn from(fp: (FileSystemError, crate::Path)) -> FileSystemException {
         let (error, path) = fp;
-        let em = format!("{} error on {:#?}", error, path);
+        let error_description = format!("{} error on {:#?}", error, path);
         match error {
             FileSystemError::UnexpectedPathType =>
-                FileSystemException::UnexpectedPathType(path, em),
-            FileSystemError::PathDoesNotExist => FileSystemException::PathDoesNotExist(path, em),
-            FileSystemError::PathIsNotSymlink => FileSystemException::PathIsNotSymlink(path, em),
-            FileSystemError::CreateFile => FileSystemException::CreateFileError(path, em),
-            FileSystemError::CreateSymlink => FileSystemException::CreateSymlinkError(path, em),
-            FileSystemError::OpenFile => FileSystemException::OpenFileError(path, em),
-            FileSystemError::AppendFile => FileSystemException::AppendFileError(path, em),
-            FileSystemError::SetMode => FileSystemException::SetModeError(path, em),
-            FileSystemError::NonWritablePath => FileSystemException::NonWritablePathError(path, em),
-            FileSystemError::NonReadablePath => FileSystemException::NonReadablePathError(path, em),
+                FileSystemException::UnexpectedPathType(path, error_description),
+            FileSystemError::PathDoesNotExist =>
+                FileSystemException::PathDoesNotExist(path, error_description),
+            FileSystemError::PathIsNotSymlink =>
+                FileSystemException::PathIsNotSymlink(path, error_description),
+            FileSystemError::CreateFile =>
+                FileSystemException::CreateFileError(path, error_description),
+            FileSystemError::CreateSymlink =>
+                FileSystemException::CreateSymlinkError(path, error_description),
+            FileSystemError::OpenFile =>
+                FileSystemException::OpenFileError(path, error_description),
+            FileSystemError::AppendFile =>
+                FileSystemException::AppendFileError(path, error_description),
+            FileSystemError::SetMode => FileSystemException::SetModeError(path, error_description),
+            FileSystemError::NonWritablePath =>
+                FileSystemException::NonWritablePathError(path, error_description),
+            FileSystemError::NonReadablePath =>
+                FileSystemException::NonReadablePathError(path, error_description),
             FileSystemError::NonExecutablePath =>
-                FileSystemException::NonExecutablePathError(path, em),
-            FileSystemError::WriteFile => FileSystemException::WriteFileError(path, em),
-            FileSystemError::WriteFlush => FileSystemException::WriteFlushError(path, em),
-            FileSystemError::MoveFile => FileSystemException::MoveFileError(path, em),
-            FileSystemError::ReadFile => FileSystemException::ReadFileError(path, em),
-            FileSystemError::DeleteFile => FileSystemException::DeleteFileError(path, em),
-            FileSystemError::DeleteDirectory => FileSystemException::DeleteDirectoryError(path, em),
-            FileSystemError::AbsolutePath => FileSystemException::AbsolutePathError(path, em),
-            FileSystemError::CanonicalPath => FileSystemException::CanonicalPathError(path, em),
-            FileSystemError::ReadSymlink => FileSystemException::ReadSymlinkError(path, em),
-            FileSystemError::CreateDirectory => FileSystemException::CreateDirectoryError(path, em),
+                FileSystemException::NonExecutablePathError(path, error_description),
+            FileSystemError::WriteFile =>
+                FileSystemException::WriteFileError(path, error_description),
+            FileSystemError::WriteFlush =>
+                FileSystemException::WriteFlushError(path, error_description),
+            FileSystemError::MoveFile =>
+                FileSystemException::MoveFileError(path, error_description),
+            FileSystemError::ReadFile =>
+                FileSystemException::ReadFileError(path, error_description),
+            FileSystemError::DeleteFile =>
+                FileSystemException::DeleteFileError(path, error_description),
+            FileSystemError::DeleteDirectory =>
+                FileSystemException::DeleteDirectoryError(path, error_description),
+            FileSystemError::AbsolutePath =>
+                FileSystemException::AbsolutePathError(path, error_description),
+            FileSystemError::CanonicalPath =>
+                FileSystemException::CanonicalPathError(path, error_description),
+            FileSystemError::ReadSymlink =>
+                FileSystemException::ReadSymlinkError(path, error_description),
+            FileSystemError::CreateDirectory =>
+                FileSystemException::CreateDirectoryError(path, error_description),
             FileSystemError::UnsafeFileContent =>
-                FileSystemException::UnsafeFileContentError(path, em),
-            FileSystemError::NoAncestorPath => FileSystemException::NoAncestorPathError(path, em),
+                FileSystemException::UnsafeFileContentError(path, error_description),
+            FileSystemError::NoAncestorPath =>
+                FileSystemException::NoAncestorPathError(path, error_description),
         }
     }
 }
@@ -272,52 +310,52 @@ impl Into<FileSystemError> for FileSystemException {
 impl std::fmt::Display for FileSystemException {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            FileSystemException::UnexpectedPathType(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::PathDoesNotExist(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::PathIsNotSymlink(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::CreateFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::CreateSymlinkError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::OpenFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::AppendFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::SetModeError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::NonWritablePathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::NonReadablePathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::NonExecutablePathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::WriteFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::WriteFlushError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::MoveFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::ReadFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::DeleteFileError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::DeleteDirectoryError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::AbsolutePathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::CanonicalPathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::ReadSymlinkError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::CreateDirectoryError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::UnsafeFileContentError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
-            FileSystemException::NoAncestorPathError(path, em) =>
-                write!(f, "{:#?}: {} {}", path, self.error(), em),
+            FileSystemException::UnexpectedPathType(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::PathDoesNotExist(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::PathIsNotSymlink(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::CreateFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::CreateSymlinkError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::OpenFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::AppendFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::SetModeError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::NonWritablePathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::NonReadablePathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::NonExecutablePathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::WriteFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::WriteFlushError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::MoveFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::ReadFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::DeleteFileError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::DeleteDirectoryError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::AbsolutePathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::CanonicalPathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::ReadSymlinkError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::CreateDirectoryError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::UnsafeFileContentError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
+            FileSystemException::NoAncestorPathError(path, error_description) =>
+                write!(f, "{:#?}: {} {}", path, self.error(), error_description),
         }
     }
 }

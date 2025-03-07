@@ -9,7 +9,7 @@
 use std::fmt::Display;
 use std::os::unix::fs::OpenOptionsExt;
 
-use crate::{Exception, FileSystemException};
+use crate::{Error, FileSystemException};
 
 #[derive(Debug)]
 pub struct OpenOptions {
@@ -76,7 +76,7 @@ impl OpenOptions {
         self
     }
 
-    pub fn open<T: Into<crate::fs::Path>>(&self, path: T) -> Result<std::fs::File, Exception> {
+    pub fn open<T: Into<crate::fs::Path>>(&self, path: T) -> Result<std::fs::File, Error> {
         let path = path.into();
         Ok(if path.exists() && self.f_mode > 0o0000 {
             std::fs::OpenOptions::new()
@@ -95,7 +95,7 @@ impl OpenOptions {
                 .open(&path)
         }
         .map_err(|e| {
-            Into::<Exception>::into(FileSystemException::OpenFileError(
+            Into::<Error>::into(FileSystemException::OpenFileError(
                 path,
                 format!("{} {}", &self, &e.to_string()),
             ))

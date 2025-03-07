@@ -137,3 +137,15 @@ impl From<Info> for Entry {
         Entry::from_info(&info)
     }
 }
+
+impl Into<Path> for Entry {
+    fn into(self) -> Path {
+        self.path()
+    }
+}
+
+impl Into<Info> for Entry {
+    fn into(self) -> Info {
+        self.info()
+    }
+}

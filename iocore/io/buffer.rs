@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use crate::{Exception, OpenOptions, Path, Result};
+use crate::{Error, OpenOptions, Path, Result};
 
 pub struct FileBuffer {
     path: Path,
@@ -15,7 +15,7 @@ impl FileBuffer {
     pub fn open_read(path: impl Into<Path>) -> Result<FileBuffer> {
         let path = path.into();
         if path.try_canonicalize().exists() && !path.try_canonicalize().is_file() {
-            return Err(Exception::FileSystemError(format!("{} is not a file", path)));
+            return Err(Error::FileSystemError(format!("{} is not a file", path)));
         }
         let file = path.open(OpenOptions::new().read(true))?;
         Ok(FileBuffer {
@@ -30,7 +30,7 @@ impl FileBuffer {
     pub fn open_write(path: impl Into<Path>) -> Result<FileBuffer> {
         let path = path.into();
         if path.try_canonicalize().exists() && !path.try_canonicalize().is_file() {
-            return Err(Exception::FileSystemError(format!("{} is not a file", path)));
+            return Err(Error::FileSystemError(format!("{} is not a file", path)));
         }
         let mut file = path.open(OpenOptions::new().read(true).write(true))?;
         let size = path.size().as_u64();

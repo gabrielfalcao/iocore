@@ -10,7 +10,7 @@ use std::process::{Command, Stdio};
 
 use sanitation::SString;
 
-use crate::exceptions::Result;
+use crate::errors::Result;
 use crate::fs::Path;
 
 /// Utility function to spawn a command from a string rather than

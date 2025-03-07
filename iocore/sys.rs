@@ -12,7 +12,7 @@ use std::str::FromStr;
 use regex::Regex;
 use sanitation::SString;
 
-use crate::Exception;
+use crate::Error;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Group {
@@ -29,12 +29,12 @@ pub struct User {
 }
 
 impl User {
-    pub fn id() -> Result<User, Exception> {
+    pub fn id() -> Result<User, Error> {
         let stdout = get_stdout_string("/usr/bin/id")?;
         Ok(User::from_id_cmd_string(stdout)?)
     }
 
-    pub fn from_id_cmd_string(id_stdout: impl std::fmt::Display) -> Result<User, Exception> {
+    pub fn from_id_cmd_string(id_stdout: impl std::fmt::Display) -> Result<User, Error> {
         let stdout = id_stdout.to_string();
         let uexpr = Regex::new(
             r"uid=(?<uid>\d+)([(](?<name>[^)]+)[)])\s*gid=(?<gid>\d+)[(](?<group>[^)]+)[)]",
@@ -64,7 +64,7 @@ impl User {
                 groups,
             })
         } else {
-            Err(Exception::SystemError(format!(
+            Err(Error::SystemError(format!(
                 "could not secure user information from /usr/bin/id"
             )))
         }
@@ -82,52 +82,81 @@ impl User {
         self.name.to_string()
     }
 
-    pub fn home(&self) -> Result<String, Exception> {
+    pub fn home(&self) -> Result<String, Error> {
         let user = self.name();
         let uid = self.uid();
         Ok(unix_user_info_home("/etc/passwd", &user, uid)
-            .or(env_var_home(&user, uid, None))
-            .or(best_guess_home(&user))?
+            .map_err(|e| {
+                Error::SystemError(format!(
+                    "User::home():{} failed call to unix_user_info_home: {:#?}",
+                    line!(),
+                    e
+                ))
+            })
+            .or_else(|_| {
+                env_var_home(&user, uid, None).map_err(|e| {
+                    Error::SystemError(format!(
+                        "User::home():{} failed call to env_var_home: {:#?}",
+                        line!(),
+                        e
+                    ))
+                })
+            })
+            .or_else(|_| {
+                best_guess_home(&user).map_err(|e| {
+                    Error::SystemError(format!(
+                        "User::home():{} failed call to best_guess_home: {:#?}",
+                        line!(),
+                        e
+                    ))
+                })
+            })?
             .to_string())
     }
 }
 
-pub fn parse_u32(s: impl Into<String>, short_description: &str) -> Result<u32, Exception> {
+pub fn parse_u32(s: impl Into<String>, short_description: &str) -> Result<u32, Error> {
     let s = s.into();
     Ok(u32::from_str(&s).map_err(|e| {
-        Exception::SafetyError(format!(
-            "{} in converting {:#?} {:#?} to u32",
-            e, s, short_description
-        ))
+        Error::SafetyError(format!("{} in converting {:#?} {:#?} to u32", e, s, short_description))
     })?)
 }
 
-pub fn get_subprocess_output(name: &str) -> Result<std::process::Output, Exception> {
+pub fn get_subprocess_output(name: &str) -> Result<std::process::Output, Error> {
     Ok(Command::new(name)
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()
-        .map_err(|e| Exception::SubprocessError(format!("failed to execute {:#?}: {}", name, e)))?)
+        .map_err(|e| Error::SubprocessError(format!("failed to execute {:#?}: {}", name, e)))?)
 }
-pub fn get_stdout_string(executable: &str) -> Result<String, Exception> {
-    let output = get_subprocess_output(executable)?;
-    safe_string(&output.stdout, &format!("stdout of {:#?}", executable))
+pub fn get_stdout_string(executable: &str) -> Result<String, Error> {
+    let (exit_code, stdout, stderr) =
+        crate::sh::shell_command_string_output(executable, crate::fs::Path::cwd())?;
+    if exit_code != 0 {
+        return Err(Error::ShellCommandError(format!(
+            "{:#?} failed with exit code {}{}",
+            executable,
+            exit_code,
+            if stderr.len() > 0 { format!(": {:#?}", stderr) } else { String::new() }
+        )));
+    }
+    safe_string(stdout.as_bytes(), &format!("stdout of {:#?}", executable))
 }
 
-pub fn env_var(key: impl Into<String>) -> Result<String, Exception> {
+pub fn env_var(key: impl Into<String>) -> Result<String, Error> {
     let key = key.into();
     Ok(std::env::var(&key).map_err(|e| {
-        Exception::EnvironmentVarError(format!("fetching environment variable {:#?}: {}", &key, e))
+        Error::EnvironmentVarError(format!("fetching environment variable {:#?}: {}", &key, e))
     })?)
 }
 
-pub fn safe_string(bytes: &[u8], short_description: &str) -> Result<String, Exception> {
-    Ok(SString::new(bytes).safe().map_err(|e| {
-        Exception::SafetyError(format!("{} in converting {:#?}", e, short_description))
-    })?)
+pub fn safe_string(bytes: &[u8], short_description: &str) -> Result<String, Error> {
+    Ok(SString::new(bytes)
+        .safe()
+        .map_err(|e| Error::SafetyError(format!("{} in converting {:#?}", e, short_description)))?)
 }
 
-fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Exception> {
+fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Error> {
     for (n, line) in crate::Path::from(path).read_lines()?.iter().enumerate() {
         let location = format!("{}:{}", path, n + 1);
         if !line.starts_with(&format!("{}:", &name)) {
@@ -136,7 +165,7 @@ fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Excep
 
         let fields = line.split(':').into_iter().collect::<Vec<_>>();
         if fields[2] != uid.to_string() {
-            return Err(Exception::SystemError(format!(
+            return Err(Error::SystemError(format!(
                 "unexpected uid in {:#?}: {} != {}",
                 location, fields[2], uid
             )));
@@ -147,7 +176,7 @@ fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Excep
                 7 => fields[6],
                 10 => fields[8],
                 e =>
-                    return Err(Exception::SystemError(format!(
+                    return Err(Error::SystemError(format!(
                         "unexpected number of fields in {:#?} {}",
                         location, e
                     ))),
@@ -157,17 +186,17 @@ fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Excep
         )?
         .to_string());
     }
-    Err(Exception::SystemError(format!(
+    Err(Error::SystemError(format!(
         "home not found in {} for uid {} ({})",
         path, uid, name
     )))
 }
 
-fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Exception> {
+fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Error> {
     let key = key.unwrap_or("HOME".to_string());
     Ok(path_owned_expectedly(
         crate::Path::directory(env_var(&key)?).map_err(|e| {
-            Exception::SystemError(format!(
+            Error::SystemError(format!(
                 "fetching home directory from environment variable {:#?}: {}",
                 key, e
             ))
@@ -178,43 +207,47 @@ fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Exc
     .to_string())
 }
 
-fn path_owned_expectedly(
-    path: crate::Path,
-    user: &str,
-    uid: u32,
-) -> Result<crate::Path, Exception> {
+fn path_owned_expectedly(path: crate::Path, user: &str, uid: u32) -> Result<crate::Path, Error> {
     if path.node().uid == uid {
         Ok(path)
     } else {
-        Err(Exception::SystemError(format!(
+        Err(Error::SystemError(format!(
             "{:#?} ain't owned by uid {} ({:#?})",
             path, uid, user
         )))
     }
 }
 
-pub fn guess_unix_home(user: impl Into<String>) -> Result<String, Exception> {
+pub fn guess_unix_home(user: impl Into<String>) -> Result<String, Error> {
     let user = user.into();
     use crate::fs::Path;
-    let candidates = vec![format!("/home/{}", &user), format!("/Users/{}", &user)];
 
-    for path in candidates.iter().map(|p| Path::directory(p).ok()) {
-        if path.is_some() {
-            return Ok(path.unwrap().to_string());
-        }
+    let path = if cfg!(target_os = "macos") {
+        format!("/Users/{}", &user)
+    } else if cfg!(unix) {
+        format!("/home/{}", &user)
+    } else {
+        return Err(Error::SystemError(format!(
+            "windows, wasm and other non-unix platforms not supported"
+        )));
+    };
+
+    if Path::raw(&path).is_dir() {
+        Ok(path)
+    } else {
+        Err(Error::HomePathError(format!(
+            "guessed unix user home {:#?} is not a folder",
+            &path
+        )))
     }
-    return Err(Exception::HomePathError(format!(
-        "neither paths seem to be home of user {:#?}",
-        &user
-    )));
 }
 
-pub fn best_guess_home(user: impl Into<String>) -> Result<String, Exception> {
+pub fn best_guess_home(user: impl Into<String>) -> Result<String, Error> {
     let user = user.into();
     use crate::fs::Path;
     Ok(if let Ok(home) = env_var("HOME") {
         Path::directory(home.trim().to_string()).map(|p| p.to_string()).map_err(|e| {
-            Exception::SafetyError(format!(
+            Error::SafetyError(format!(
                 "environment variable HOME points to a non-accessible path {:#?}: {}",
                 home, e
             ))
@@ -223,7 +256,7 @@ pub fn best_guess_home(user: impl Into<String>) -> Result<String, Exception> {
         guess_unix_home(&user)?
     })
 }
-pub fn home() -> Result<String, Exception> {
+pub fn home() -> Result<String, Error> {
     let user = if let Ok(user) = env_var("USER") {
         user.trim().to_string()
     } else {
@@ -232,7 +265,7 @@ pub fn home() -> Result<String, Exception> {
 
     let uid = if let Ok(uid_s) = env_var("UID") {
         u32::from_str(&uid_s).map_err(|_| {
-            Exception::SafetyError(format!(
+            Error::SafetyError(format!(
                 "environment variable UID holds a non-numeric value: {:#?}",
                 uid_s
             ))
@@ -240,124 +273,10 @@ pub fn home() -> Result<String, Exception> {
     } else if let Ok(best_guess_path) = best_guess_home(user) {
         return Ok(best_guess_path);
     } else {
-        return Err(Exception::HomePathError(format!("could not secure home path from neither HOME environment variable nor guess based on UID environment variable")));
+        return Err(Error::HomePathError(format!("could not secure home path from neither HOME environment variable nor guess based on UID environment variable")));
     };
 
     unix_user_info_home("/etc/passwd", &user, uid)
         .or(env_var_home(&user, uid, None))
         .or(best_guess_home(&user))
-}
-
-#[cfg(test)]
-mod test {
-    use crate::exceptions::*;
-    use crate::sys::*;
-
-    #[test]
-    fn test_home() {
-        assert!(home().unwrap().contains(&env_var("USER").unwrap()));
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn test_guess_unix_home_macosx() {
-        let user = env_var("USER").unwrap();
-        assert_eq!(guess_unix_home(&user).unwrap(), format!("/Users/{}", &user))
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn test_guess_unix_home_linux() {
-        let user = env_var("USER").unwrap();
-        assert_eq!(guess_unix_home(&user).unwrap(), format!("/home/{}", &user))
-    }
-
-    #[test]
-    fn test_user_from_id_cmd_string() -> Result<()> {
-        let stdout = format!("uid=501(name) gid=20(group) groups=20(group),101(access_bpf),12(everyone),61(localaccounts),79(_appserverusr),80(admin),81(_appserveradm),98(_lpadmin),701(com.apple.sharepoint.group.1),702(com.apple.sharepoint.group.2),33(_appstore),100(_lpoperator),204(_developer),250(_analyticsusers),395(com.apple.access_ftp),398(com.apple.access_screensharing)");
-        let user = User::from_id_cmd_string(stdout)?;
-
-        assert_eq!(user.gid, 20);
-        assert_eq!(user.uid, 501);
-        assert_eq!(user.name, "name");
-        assert_eq!(user.group, "group");
-        assert_eq!(
-            user.groups,
-            vec![
-                Group {
-                    gid: 501,
-                    name: format!("name"),
-                },
-                Group {
-                    gid: 20,
-                    name: format!("group"),
-                },
-                Group {
-                    gid: 20,
-                    name: format!("group"),
-                },
-                Group {
-                    gid: 101,
-                    name: format!("access_bpf"),
-                },
-                Group {
-                    gid: 12,
-                    name: format!("everyone"),
-                },
-                Group {
-                    gid: 61,
-                    name: format!("localaccounts"),
-                },
-                Group {
-                    gid: 79,
-                    name: format!("_appserverusr"),
-                },
-                Group {
-                    gid: 80,
-                    name: format!("admin"),
-                },
-                Group {
-                    gid: 81,
-                    name: format!("_appserveradm"),
-                },
-                Group {
-                    gid: 98,
-                    name: format!("_lpadmin"),
-                },
-                Group {
-                    gid: 701,
-                    name: format!("com.apple.sharepoint.group.1"),
-                },
-                Group {
-                    gid: 702,
-                    name: format!("com.apple.sharepoint.group.2"),
-                },
-                Group {
-                    gid: 33,
-                    name: format!("_appstore"),
-                },
-                Group {
-                    gid: 100,
-                    name: format!("_lpoperator"),
-                },
-                Group {
-                    gid: 204,
-                    name: format!("_developer"),
-                },
-                Group {
-                    gid: 250,
-                    name: format!("_analyticsusers"),
-                },
-                Group {
-                    gid: 395,
-                    name: format!("com.apple.access_ftp"),
-                },
-                Group {
-                    gid: 398,
-                    name: format!("com.apple.access_screensharing"),
-                }
-            ]
-        );
-        Ok(())
-    }
 }

@@ -21,4 +21,4 @@ doctest = false
 bench = false
 
 [dependencies]
-iocore = { version = "0.1000.0" }
+iocore = { path = ".." }

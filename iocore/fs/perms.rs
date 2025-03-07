@@ -243,10 +243,10 @@ mod trilobyte_tests {
 // //     // use crate::fs::NodePermissions;
 // //     // use crate::fs::SpecialStatBits;
 // //     use crate::fs::StatBits;
-// //     use crate::Exception;
+// //     use crate::Error;
 
 // //     #[test]
-// //     fn test_stat_bits() -> Result<(), Exception> {
+// //     fn test_stat_bits() -> Result<(), Error> {
 // //         Ok(())
 // //     }
 // // }

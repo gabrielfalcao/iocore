@@ -3,7 +3,7 @@
 
 use iocore::*;
 
-/// `empty_path` creates an empty file and returns a [`iocore::Path`]
+/// `empty_path` returns [`iocore::Path`] deletes path if exists
 pub fn empty_path(
     path: impl Into<Path>,
     name: impl std::fmt::Display,
@@ -15,19 +15,13 @@ pub fn empty_path(
         None => test_file,
     };
 
-    if test_file.try_canonicalize().exists() {
+    if test_file.exists() {
         match test_file.delete() {
             Ok(_) => {},
             Err(e) => {
                 eprintln!("delete {}: {}", &test_file, e);
             },
         }
-    }
-    match test_file.write(&[]) {
-        Ok(_) => {},
-        Err(e) => {
-            eprintln!("create {}: {}", &test_file, e);
-        },
     }
     test_file
 }
@@ -63,10 +57,20 @@ macro_rules! path_to_test_file {
 #[macro_export]
 macro_rules! folder_path {
     () => {
-        iocore::Path::new(file!()).parent().unwrap()
+        match iocore::Path::new(file!()).parent() {
+            Some(folder) => folder,
+            None => {
+                panic!("{} has no parent folder!!", file!()) // preposterous but gracefully covered
+            },
+        }
     };
     ($name:literal) => {
-        folder_path!().join($name)
+        match iocore::Path::new(file!()).parent() {
+            Some(folder) => folder.join($name),
+            None => {
+                panic!("{} has no parent folder!!", file!()) // preposterous but gracefully covered
+            },
+        }
     };
 }
 
@@ -74,30 +78,25 @@ macro_rules! folder_path {
 #[macro_export]
 macro_rules! test_folder_parent_path {
     () => {
-        match folder_path!().parent() {
-            Some(folder) = folder,
-            None => {
-                panic!("{} has no parent folder!!", folder_path!())
+        {
+            let path = folder_path!();
+            match path.parent() {
+                Some(folder) = folder,
+                None => {
+                    panic!("{} has no parent folder!!", &path)
+                }
             }
         }
     };
     ($name:literal) => {
-        match folder_path!().parent() {
-            Some(folder) = folder.join($name),
-            None => {
-                panic!("{} has no parent folder!!", folder_path!())
+        {
+            let path = folder_path!();
+            match path.parent() {
+                Some(folder) = folder.join($name),
+                None => {
+                    panic!("{} has no parent folder!!", &path)
+                }
             }
         }
     };
 }
-
-// #[macro_export]
-// macro_rules! scenario {
-//     ($name:ident, $test:block) => {
-//         #[test]
-//         fn test_<$name>() -> ::std::result::Result<(), String> {
-//             <$block>
-//                 Ok(())
-//         }
-//     }
-// }

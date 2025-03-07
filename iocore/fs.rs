@@ -5,7 +5,7 @@
 // /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
 //   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
 //     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
-pub mod exceptions;
+pub mod errors;
 pub mod opts;
 pub mod perms;
 pub mod size;
@@ -24,46 +24,108 @@ use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
 
-pub use exceptions::*;
+pub use errors::*;
 pub use opts::*;
 pub use perms::*;
 use sanitation::SString;
-use serde::de::Visitor;
 use serde::{Deserialize, Serialize};
 pub use size::*;
 pub use timed::*;
 
-use crate::exceptions::Exception;
+use crate::errors::Error;
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
+
+pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Path {
     inner: String,
-    path_type: Option<PathType>,
 }
-pub struct PathVisitor;
-impl<'de> Visitor<'de> for PathVisitor {
-    type Value = Path;
-
-    fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(formatter, "array of bytes within the Utf8 range")
-    }
-
-    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Path::new(s.to_string()))
-    }
-}
-pub fn cslashend(s: &str) -> String {
+pub fn remove_trailing_slash(haystack: &str) -> String {
     let regex = regex::Regex::new(r"/+$").unwrap();
-    regex.replace_all(s, "").to_string()
+    regex.replace_all(haystack, "").to_string()
 }
+pub fn expand_home_regex(haystack: &str, expansion: &str) -> String {
+    let regex = regex::Regex::new(r"^~").unwrap();
+    regex.replace_all(haystack, expansion).to_string()
+}
+pub fn add_trailing_separator(path: impl std::fmt::Display) -> String {
+    let path = path.to_string();
+    let path = remove_trailing_slash(&path);
+    format!("{}{}", path, MAIN_SEPARATOR_STR)
+}
+pub fn repl_beg(pattern: &str, haystack: &str, repl: &str) -> String {
+    let regex = regex::Regex::new(&format!("^{}", pattern)).unwrap();
+    regex.replace_all(haystack, repl).to_string()
+}
+pub fn repl_end(pattern: &str, haystack: &str, repl: &str) -> String {
+    let regex = regex::Regex::new(&format!("{}$", pattern)).unwrap();
+    regex.replace_all(haystack, repl).to_string()
+}
+pub fn remove_end(pattern: &str, haystack: &str) -> String {
+    repl_end(pattern, haystack, "")
+}
+pub fn remove_start(pattern: &str, haystack: &str) -> String {
+    repl_beg(&add_trailing_separator(pattern), haystack, "")
+}
+pub fn remove_duplicate_separators(p: impl std::fmt::Display) -> String {
+    let e = regex::Regex::new(&format!("[{}]+", MAIN_SEPARATOR_STR)).unwrap();
+    let p = p.to_string();
+    e.replace_all(&p, MAIN_SEPARATOR_STR).to_string()
+}
+pub fn split_str_into_relative_subpath_parts(haystack: &str) -> Vec<String> {
+    remove_trailing_slash(haystack)
+        .split(MAIN_SEPARATOR_STR)
+        .map(|_| "..".to_string())
+        .collect::<Vec<String>>()
+}
+pub fn path_str_to_relative_subpath(haystack: &str) -> String {
+    add_trailing_separator(split_str_into_relative_subpath_parts(haystack).join(MAIN_SEPARATOR_STR))
+}
+pub fn remove_equal_prefix_from_path_strings(path: &str, path2: &str) -> (String, String) {
+    let path = remove_trailing_slash(path);
+    let path2 = remove_trailing_slash(path2);
+    let tmp = remove_trailing_slash(&if path.starts_with(&path2) {
+        remove_start(&path, &path2)
+    } else {
+        remove_start(&path2, &path)
+    });
+    let path_end = remove_trailing_slash(&if path.starts_with(&tmp) {
+        remove_start(&tmp, &path)
+    } else {
+        String::new()
+    });
+
+    let path2_end = remove_trailing_slash(&if path2.starts_with(&tmp) {
+        remove_start(&tmp, &path2)
+    } else {
+        String::new()
+    });
+
+    let path_result = if path_end == path { String::new() } else { path_end.to_string() };
+    let path2_result = if path2_end == path2 { String::new() } else { path2_end.to_string() };
+
+    // dbg!(&path, &path2);
+    // dbg!(&tmp);
+    // dbg!(&path_end, &path2_end);
+    (path_result, path2_result)
+}
+// `iocore::fs::remove_absolute_path` uses `Path::cwd` to form the absolute path of the given path
+pub fn remove_absolute_path(path: &Path) -> Path {
+    if path.is_absolute() {
+        return path.clone();
+    }
+    let cwd = Path::cwd();
+    let absolute_path = cwd.join(path);
+    let absolute_path_string = absolute_path.to_string();
+    let absolute_part = absolute_path_string.replace(&path.to_string(), "");
+    // dbg!(&absolute_path, &absolute_path_string, &absolute_part);
+    return Path::raw(absolute_path_string.replace(&add_trailing_separator(&absolute_part), ""));
+}
+
 impl Hash for Path {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let mut parts = BTreeSet::<String>::new();
-        parts.insert(self.try_absolute().to_string());
         parts.insert(self.kind().to_string());
         parts.insert(self.try_canonicalize().to_string());
         Vec::from_iter(parts.into_iter()).join("%").hash(state);
@@ -71,18 +133,29 @@ impl Hash for Path {
 }
 impl PartialEq for Path {
     fn eq(&self, other: &Self) -> bool {
-        self.inner_string().eq(&other.inner_string())
+        self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()
     }
 }
 impl Eq for Path {}
 impl PartialOrd for Path {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.inner_string().partial_cmp(&other.inner_string())
+        partial_cmp_paths_by_length(self, other)
+            .partial_cmp(&partial_cmp_paths_by_parts(self, other))
     }
 }
 impl Ord for Path {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.inner_string().cmp(&other.inner_string())
+        cmp_paths_by_length(self, other).cmp(&cmp_paths_by_parts(self, other))
+    }
+}
+impl Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", &self.inner)
+    }
+}
+impl std::fmt::Debug for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:#?}", &self.inner)
     }
 }
 
@@ -123,12 +196,6 @@ impl Hash for PathType {
     }
 }
 
-fn nodoubles(p: impl Into<String>) -> String {
-    use regex::Regex;
-    let e = Regex::new(&format!("[{}]+", MAIN_SEPARATOR_STR)).unwrap();
-    let p = p.into();
-    e.replace_all(&p, MAIN_SEPARATOR_STR).to_string()
-}
 impl PathType {
     pub fn to_str(self) -> &'static str {
         match self {
@@ -288,50 +355,58 @@ impl Display for Node {
 }
 impl std::fmt::Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\"", &self.path())
+        write!(f, "{:#?}", &self.path().to_string())
     }
 }
 
 impl Path {
-    pub fn new(path: impl Into<String>) -> Path {
-        let inner = nodoubles(path);
-        let inner = if inner.starts_with("~/") {
-            inner.replacen("~/", &crate::TILDE.to_string(), 1)
+    pub fn new(path: impl std::fmt::Display) -> Path {
+        let path = path.to_string();
+        let string = remove_duplicate_separators(path);
+        let string = if string.starts_with("~/") {
+            string.replacen("~/", &crate::TILDE.to_string(), 1)
         } else {
-            inner.to_string()
+            string.to_string()
         };
-        Path {
-            inner: inner,
-            path_type: None,
-        }
+        Path { inner: string }
     }
 
-    pub fn safe(path: impl Into<String>) -> Result<Path, Exception> {
-        let inner = nodoubles(path);
-        let inner = if inner.starts_with("~/") {
-            inner.replacen("~/", &crate::TILDE.to_string(), 1)
+    pub fn safe(path: impl std::fmt::Display) -> Result<Path, Error> {
+        let string = remove_duplicate_separators(path);
+        let string = if string.starts_with("~/") {
+            string.replacen("~/", &crate::TILDE.to_string(), 1)
         } else {
-            inner.to_string()
+            string.to_string()
         };
-        if inner.len() > FILENAME_MAX {
-            return Err(Exception::FileSystemError(format!(
+        if string.len() > FILENAME_MAX {
+            return Err(Error::FileSystemError(format!(
                 "{}::Path path too long in {:#?}: {:#?}",
                 module_path!(),
                 std::env::consts::OS,
-                inner
+                string
             )));
         }
-        Ok(Path {
-            inner: inner,
-            path_type: None,
-        })
+        Ok(Path { inner: string })
+    }
+
+    pub fn raw(inner: impl std::fmt::Display) -> Path {
+        let inner = inner.to_string();
+        Path { inner }
+    }
+
+    pub fn from_path_buf(path_buf: &std::path::PathBuf) -> Path {
+        Path::raw(path_buf.display())
+    }
+
+    pub fn from_std_path(path: &std::path::Path) -> Path {
+        Path::raw(path.display())
     }
 
     pub fn cwd() -> Path {
         Path::new(
             ::std::env::current_dir()
                 .map(|p| p.display().to_string())
-                .unwrap_or(".".to_string()),
+                .unwrap_or_else(|_| ".".to_string()),
         )
         .try_canonicalize()
     }
@@ -346,44 +421,12 @@ impl Path {
         }
     }
 
-    pub fn new_with_kind<S: Into<String>>(path: S) -> Path {
-        let mut path = Path::new(path);
-        path.with_kind().clone()
-    }
-
-    pub fn existing<S: Into<String>>(path: S) -> Result<Path, Exception> {
-        let path = Path::new_with_kind(path);
+    pub fn existing(path: impl std::fmt::Display) -> Result<Path, Error> {
+        let path = Path::new(path);
         match path.kind() {
             PathType::None => Err((FileSystemError::PathDoesNotExist, path).into()),
             _ => Ok(path.clone()),
         }
-    }
-
-    pub fn update_kind(&mut self) -> PathType {
-        let kind = self.query_type();
-        self.path_type = Some(kind);
-        kind
-    }
-
-    pub fn update_unset_kind(&mut self) -> Option<PathType> {
-        match self.path_type {
-            None | Some(PathType::None) => {
-                self.path_type = Some(self.query_type());
-            },
-            _ => {},
-        }
-        self.path_type
-    }
-
-    pub fn with_kind(&mut self) -> &Path {
-        self.update_unset_kind();
-        self
-    }
-
-    pub fn typed(&self) -> Path {
-        let mut path = self.clone();
-        path.update_unset_kind();
-        path
     }
 
     pub fn query_type(&self) -> PathType {
@@ -400,85 +443,87 @@ impl Path {
     }
 
     pub fn kind(&self) -> PathType {
-        match self.path_type {
-            Some(kind) => kind,
-            None => self.query_type(),
-        }
+        self.query_type()
     }
 
     pub fn inner_string(&self) -> String {
-        nodoubles(&self.inner)
+        self.inner.to_string()
     }
 
     pub fn as_str(&self) -> &'static str {
         self.inner_string().leak()
     }
 
-    pub fn path(&self) -> &std::path::Path {
-        std::path::Path::new(self.inner.as_str())
+    pub fn path(&self) -> &'static std::path::Path {
+        let mut pathbuf = std::path::PathBuf::new();
+        for part in self.split() {
+            pathbuf.push(part);
+        }
+        Box::leak(pathbuf.into_boxed_path())
     }
 
     pub fn contains(&self, content: &str) -> bool {
         self.inner_string().contains(content)
     }
 
-    pub fn relative_to(&self, t: impl Into<Path>) -> Path {
-        let t = t.into();
-        if self.to_string() == t.to_string() {
-            return t;
+    pub fn relative_to(&self, t: &Path) -> Path {
+        // let s = self;
+        // dbg!(s, s.exists());
+        // dbg!(t, t.exists());
+        let canonical_self = self.try_canonicalize();
+        let canonical_t = t.try_canonicalize();
+        if canonical_self.to_string() == canonical_t.to_string() {
+            return Path::raw("./");
         }
 
-        // if t.is_parent_of(self) {
-        //     return self.relative_to_parent(t)
-        // }
-        let mut s = if self.is_dir() {
-            format!("{}/", self.try_absolute().to_string().trim_end_matches('/'))
+        let s = if canonical_self.exists() {
+            canonical_self.to_string()
         } else {
-            self.parent().unwrap().to_string()
+            self.to_string()
         };
-        let (t, n) = if t.is_dir() {
-            (
-                format!("{}/", t.try_absolute().to_string().trim_end_matches('/')),
-                String::new(),
-            )
-        } else {
-            let n = t.name();
-            let t = t.try_absolute().parent().unwrap().to_string();
-            (format!("{}/", t.trim_end_matches('/')), n)
-        };
+        let t = if canonical_t.exists() { canonical_t.to_string() } else { t.to_string() };
 
-        if s.starts_with(&t) {
-            s = s.replacen(&t, "", 1);
+        // dbg!(s.len() > t.len());
+        if s.len() > t.len() {
+            if s.starts_with(&t) {
+                let new_path = repl_beg(&add_trailing_separator(&t), &s, "");
+                // dbg!(new_path);
+                return Path::new(new_path);
+            }
         }
 
-        s = s
-            .trim_end_matches('/')
-            .split(MAIN_SEPARATOR_STR)
-            .map(|_| "..".to_string())
-            .collect::<Vec<_>>()
-            .join(MAIN_SEPARATOR_STR);
-        if n.len() > 0 {
-            s = [s, n].join(MAIN_SEPARATOR_STR);
+        // dbg!(t.len() < s.len());
+        if t.len() < s.len() {
+            if t.starts_with(&s) {
+                let new_path = repl_beg(&add_trailing_separator(&s), &t, "");
+                // dbg!(new_path);
+                return Path::new(new_path);
+            }
         }
-        Path::new(nodoubles(s))
+
+        // dbg!(s.len() < t.len());
+        if s.len() < t.len() {
+            // dbg!(&t, &s);
+            if t.starts_with(&s) {
+                let t_without_s =
+                    remove_trailing_slash(&remove_start(&add_trailing_separator(&s), &t));
+                let sub_path = path_str_to_relative_subpath(&t_without_s);
+                // dbg!(&t_without_s);
+                // assert_ne!(&t_without_s, &t);
+                // return Path::raw(dbg!(sub_path));
+                return Path::raw(sub_path);
+            }
+        }
+        // Path::new(if !s.starts_with("./") { remove_trailing_slash(&s) } else { s })
+        let new_path = Path::raw(&t);
+        // let without_absolute_part = remove_absolute_path(&new_path);
+        // dbg!(s, t, &new_path, &without_absolute_part);
+        // dbg!(s, t, &new_path);
+        return new_path;
     }
 
     pub fn relative_to_cwd(&self) -> Path {
-        let cwd = Path::cwd();
-        if self.to_string() == cwd.to_string() {
-            return Path::new("./");
-        }
-
-        let s = nodoubles(self.try_absolute().to_string());
-        let cwd = cwd.try_canonicalize().to_string();
-
-        let s = nodoubles(if s.starts_with(&cwd) { s.replacen(&cwd, "./", 1) } else { s });
-        let s = if s.len() > 2 && s.starts_with("./") {
-            cslashend(&s.replacen("./", "", 1))
-        } else {
-            s
-        };
-        Path::new(if !s.starts_with("./") { cslashend(&s) } else { s })
+        self.relative_to(&Path::cwd())
     }
 
     // fn relative_to_parent(&self, certain_parent: &Path) -> Path {
@@ -486,38 +531,38 @@ impl Path {
     //         return Path::new("./");
     //     }
 
-    //     let s = nodoubles(self.try_absolute().to_string());
+    //     let s = remove_duplicate_separators(self.try_absolute().to_string());
     //     let certain_parent = certain_parent.try_canonicalize().to_string();
 
-    //     let s = nodoubles(if s.starts_with(&certain_parent) { s.replacen(&certain_parent, "./", 1) } else { s });
+    //     let s = remove_duplicate_separators(if s.starts_with(&certain_parent) { s.replacen(&certain_parent, "./", 1) } else { s });
     //     let s = if s.len() > 2 && s.starts_with("./") {
-    //         cslashend(&s.replacen("./", "", 1))
+    //         remove_trailing_slash(&s.replacen("./", "", 1))
     //     } else {
     //         s
     //     };
-    //     Path::new(if !s.starts_with("./") { cslashend(&s) } else { s })
+    //     Path::new(if !s.starts_with("./") { remove_trailing_slash(&s) } else { s })
     // }
 
-    pub fn file<S: Into<String>>(path: S) -> Result<Path, Exception> {
+    pub fn file(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
 
         if path.canonicalize()?.is_file() {
             Ok(path)
         } else {
-            Err(Exception::UnexpectedPathType(path, PathType::File))
+            Err(Error::UnexpectedPathType(path, PathType::File))
         }
     }
 
-    pub fn directory<S: Into<String>>(path: S) -> Result<Path, Exception> {
+    pub fn directory(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
         if path.canonicalize()?.is_dir() {
             Ok(path)
         } else {
-            Err(Exception::UnexpectedPathType(path, PathType::Directory))
+            Err(Error::UnexpectedPathType(path, PathType::Directory))
         }
     }
 
-    pub fn writable_file(path: impl Into<Path>) -> Result<Path, Exception> {
+    pub fn writable_file(path: impl Into<Path>) -> Result<Path, Error> {
         let path = path.into();
         match path.status() {
             PathStatus::WritableFile => Ok(path),
@@ -533,7 +578,7 @@ impl Path {
         }
     }
 
-    pub fn readable_file(path: impl Into<Path>) -> Result<Path, Exception> {
+    pub fn readable_file(path: impl Into<Path>) -> Result<Path, Error> {
         let path = path.into();
         if !path.readable() {
             Err((FileSystemError::NonReadablePath, path).into())
@@ -542,7 +587,7 @@ impl Path {
         }
     }
 
-    pub fn writable_directory(path: impl Into<Path>) -> Result<Path, Exception> {
+    pub fn writable_directory(path: impl Into<Path>) -> Result<Path, Error> {
         let path = path.into();
         match path.status() {
             PathStatus::WritableDirectory => Ok(path),
@@ -558,12 +603,12 @@ impl Path {
         }
     }
 
-    pub fn writable_symlink(path: impl Into<Path>) -> Result<Path, Exception> {
+    pub fn writable_symlink(path: impl Into<Path>) -> Result<Path, Error> {
         let path = path.into();
         match path.status() {
             PathStatus::WritableSymlink => Ok(path),
             PathStatus::None => path.makedirs().map_err(|e| {
-                Into::<Exception>::into((FileSystemError::NonWritablePath, path, e.to_string()))
+                Into::<Error>::into((FileSystemError::NonWritablePath, path, e.to_string()))
             }),
             status => Err((
                 FileSystemError::NonWritablePath,
@@ -586,7 +631,7 @@ impl Path {
         }
     }
 
-    pub fn create(&self) -> Result<File, Exception> {
+    pub fn create(&self) -> Result<File, Error> {
         let node = self.node();
         if node.is_writable_file() {
             self.makedirs()?;
@@ -600,26 +645,36 @@ impl Path {
         }
     }
 
-    pub fn write(&self, contents: &[u8]) -> Result<Path, Exception> {
+    pub fn write(&self, contents: &[u8]) -> Result<Path, Error> {
         self.makedirs()?;
-        let mut file = self.open(OpenOptions::new().write(true).create(true))?;
+        let mut file = self.open(OpenOptions::new().write(true).create(true)).map_err(|e| {
+            (FileSystemError::OpenFile, self, format!("Path::write():{} {}", line!(), e))
+        })?;
         file.set_len(0)?;
         let len = contents.len();
         match file.write_all(contents) {
             Ok(_) => match file.flush() {
                 Ok(_) => {},
                 Err(e) =>
-                    return Err((FileSystemError::WriteFlush, self.clone(), format!("{}", e)).into()),
+                    return Err((
+                        FileSystemError::WriteFlush,
+                        self.clone(),
+                        format!("Path::write():{} {}", line!(), e),
+                    )
+                        .into()),
             },
             Err(e) =>
-                return Err(
-                    (FileSystemError::WriteFile, self.clone(), format!("{} {}", len, e)).into()
-                ),
+                return Err((
+                    FileSystemError::WriteFile,
+                    self.clone(),
+                    format!("Path::write():{} {} {}", line!(), len, e),
+                )
+                    .into()),
         };
         Ok(self.clone())
     }
 
-    pub fn append(&self, contents: &[u8]) -> Result<usize, Exception> {
+    pub fn append(&self, contents: &[u8]) -> Result<usize, Error> {
         let node = self.node();
         let mut file = if node.is_writable_file() {
             let mut file =
@@ -656,16 +711,12 @@ impl Path {
         Ok(bytes)
     }
 
-    pub fn with_filename(&self, name: impl Into<String>) -> Path {
-        let name = name.into();
-        self.parent().map(|p| p.join(&name)).unwrap_or(Path::new(&name))
+    pub fn with_filename(&self, name: impl std::fmt::Display) -> Path {
+        let name = name.to_string();
+        self.parent().map(|p| p.join(&name)).unwrap_or_else(|| Path::new(&name))
     }
 
-    pub fn rename(
-        &self,
-        to: &Path,
-        create_missing_parents_at_target: bool,
-    ) -> Result<Path, Exception> {
+    pub fn rename(&self, to: &Path, create_missing_parents_at_target: bool) -> Result<Path, Error> {
         let to = match to.parent() {
             Some(_) => to.clone(),
             None => match self.parent() {
@@ -685,13 +736,14 @@ impl Path {
         match std::fs::rename(self.path(), to.path()) {
             Ok(_) => Ok(to),
             Err(e) =>
-                return Err(
-                    (FileSystemError::MoveFile, self.clone(), format!("to {} {}", to, e)).into()
-                ),
+                return Err(Error::FileSystemError(format!(
+                    "{} moving {:#?} to {:#?}",
+                    e, self, &to
+                ))),
         }
     }
 
-    pub fn delete(&self) -> Result<Path, Exception> {
+    pub fn delete(&self) -> Result<Path, Error> {
         let node = self.node();
         if node.is_dir {
             for child in self.list()? {
@@ -717,11 +769,11 @@ impl Path {
         Ok(self.clone())
     }
 
-    pub fn open(&self, open_options: &mut OpenOptions) -> Result<File, Exception> {
+    pub fn open(&self, open_options: &mut OpenOptions) -> Result<File, Error> {
         open_options.open(self.path())
     }
 
-    pub fn to_stdio(&self, open_options: &mut OpenOptions) -> Result<Stdio, Exception> {
+    pub fn to_stdio(&self, open_options: &mut OpenOptions) -> Result<Stdio, Error> {
         Ok(Into::<Stdio>::into(self.open(open_options)?))
     }
 
@@ -729,7 +781,7 @@ impl Path {
         self.to_string().as_bytes().to_vec()
     }
 
-    pub fn read_bytes(&self) -> Result<Vec<u8>, Exception> {
+    pub fn read_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut file = self.open(OpenOptions::new().read(true))?;
         let mut bytes = Vec::<u8>::new();
         match file.read_to_end(&mut bytes) {
@@ -739,7 +791,7 @@ impl Path {
         Ok(bytes)
     }
 
-    pub fn read(&self) -> Result<String, Exception> {
+    pub fn read(&self) -> Result<String, Error> {
         let bytes = self.read_bytes()?;
         SString::new(&bytes)
             .safe()
@@ -748,6 +800,10 @@ impl Path {
 
     pub fn size(&self) -> Size {
         Size::from(self.node().size)
+    }
+
+    pub fn is_absolute(&self) -> bool {
+        self.inner_string().starts_with(ROOT_PATH_STR)
     }
 
     pub fn is_file(&self) -> bool {
@@ -831,16 +887,14 @@ impl Path {
         self.owner_readable() || self.group_readable()
     }
 
-    pub fn set_mode(&mut self, mode: u32) -> Result<Path, Exception> {
-        if self.exists() {
-            Ok(self.node().set_mode(mode)?.path())
-        } else {
-            Err(Into::<Exception>::into((
-                FileSystemError::SetMode,
-                self.clone(),
-                format!("setting mode {:o}", mode),
-            )))
-        }
+    pub fn set_mode(&mut self, mode: u32) -> Result<Path, Error> {
+        let path = self.clone();
+        let meta = std::fs::metadata(&self).map_err(|e| {
+            (FileSystemError::SetMode, &path, format!("Path::set_mode():{} {}", line!(), e))
+        })?;
+        let mut p = meta.permissions();
+        p.set_mode(mode);
+        Ok(path)
     }
 
     pub fn is_dir(&self) -> bool {
@@ -867,12 +921,41 @@ impl Path {
         self.node().size
     }
 
-    pub fn read_lines(&self) -> Result<Vec<String>, Exception> {
+    pub fn read_lines(&self) -> Result<Vec<String>, Error> {
         Ok(self.read()?.lines().map(|c| c.to_string()).collect::<Vec<String>>())
     }
 
-    pub fn join(&self, path: impl Into<String>) -> Path {
-        Path::from(self.path().join(path.into()))
+    pub fn join(&self, path: impl std::fmt::Display) -> Path {
+        let path = remove_duplicate_separators(path.to_string());
+        if path.starts_with(MAIN_SEPARATOR_STR) {
+            return Path::raw(path);
+        }
+        let mut self_parts = self.split();
+        for part in path.split(MAIN_SEPARATOR_STR) {
+            self_parts.push_back(part.to_string());
+        }
+        let new_path_string = Vec::from(self_parts).join(MAIN_SEPARATOR_STR);
+        Path::raw(remove_duplicate_separators(new_path_string))
+    }
+
+    pub fn split_extension(&self) -> (String, Option<String>) {
+        let name = self.name();
+        let parts = name.split('.').map(|a| a.to_string()).collect::<Vec<String>>();
+        if parts.len() > 1 {
+            (
+                parts[..parts.len() - 1].to_vec().join("."),
+                Some(parts[parts.len() - 1].to_string()),
+            )
+        } else {
+            (parts.join("."), None)
+        }
+    }
+
+    pub fn join_extension(name: impl std::fmt::Display, extension: Option<String>) -> String {
+        match extension {
+            None => name.to_string(),
+            Some(extension) => format!("{}.{}", name, extension),
+        }
     }
 
     pub fn extension(&self) -> Option<String> {
@@ -886,9 +969,11 @@ impl Path {
         let mut parts = self
             .extension()
             .map(|e| self.name().split(e.as_str()).map(String::from).collect::<Vec<String>>())
-            .unwrap_or(vec![self.name(), String::new()]);
+            .unwrap_or_else(|| vec![self.name(), String::new()]);
         parts.pop();
-        self.parent().unwrap().join(parts.join(self.extension().unwrap_or_default().as_str()))
+        self.parent()
+            .unwrap()
+            .join(parts.join(self.extension().unwrap_or_default().as_str()))
     }
 
     pub fn with_extension(&self, extension: impl ::std::fmt::Display) -> Path {
@@ -896,7 +981,7 @@ impl Path {
         let extension = extension
             .starts_with(".")
             .then_some(extension.clone())
-            .unwrap_or(format!(".{}", &extension));
+            .unwrap_or_else(|| format!(".{}", &extension));
         Path::new(format!("{}{}", self.without_extension(), extension))
     }
 
@@ -909,24 +994,24 @@ impl Path {
         }
     }
 
-    pub fn expand(&self) -> Result<Path, Exception> {
-        Ok(Path::new(if self.to_string().starts_with("~") {
-            self.to_string().replacen('~', crate::sys::home()?.as_str(), 1)
+    pub fn expand(&self) -> Result<Path, Error> {
+        if self.to_string().starts_with("~") {
+            Ok(Path::raw(expand_home_regex(&self.to_string(), crate::sys::home()?.as_str())))
         } else {
-            self.to_string()
-        }))
+            Ok(self.clone())
+        }
     }
 
     pub fn try_expand(&self) -> Path {
         self.expand()
-            .unwrap_or(Path::from(self.to_string().replacen('~', &crate::TILDE, 1)))
+            .unwrap_or_else(|_| Path::raw(expand_home_regex(&self.to_string(), &crate::TILDE)))
     }
 
-    pub fn absolute(&self) -> Result<Path, Exception> {
+    pub fn absolute(&self) -> Result<Path, Error> {
         let name = self.name();
         if self.kind() == PathType::Symlink {
             if let Some(ancestor) = self.parent() {
-                Ok(ancestor.absolute().unwrap_or(ancestor).join(name))
+                Ok(ancestor.absolute().unwrap_or_else(|_| ancestor).join(name))
             } else {
                 Err((
                     FileSystemError::AbsolutePath,
@@ -945,16 +1030,16 @@ impl Path {
     }
 
     pub fn try_absolute(&self) -> Path {
-        self.absolute().unwrap_or(self.clone())
+        self.absolute().unwrap_or_else(|_| self.clone())
     }
 
-    pub fn canonicalize(&self) -> Result<Path, Exception> {
+    pub fn canonicalize(&self) -> Result<Path, Error> {
         let name = self.name();
         match self.expand()?.path().canonicalize() {
             Ok(path) => Ok(Path::from(path)),
             Err(e) =>
                 if let Some(ancestor) = self.parent() {
-                    Ok(ancestor.absolute().unwrap_or(ancestor).join(name))
+                    Ok(ancestor.absolute().unwrap_or_else(|_| ancestor).join(name))
                 } else {
                     Err((FileSystemError::CanonicalPath, self.clone(), format!("{}", e)).into())
                 },
@@ -964,9 +1049,8 @@ impl Path {
     pub fn try_canonicalize(&self) -> Path {
         match self.canonicalize() {
             Ok(path) => path,
-            Err(_) => self.try_absolute(),
+            Err(_) => self.clone(),
         }
-        .try_expand()
     }
 
     pub fn try_read_symlink(&self) -> Path {
@@ -976,7 +1060,7 @@ impl Path {
         }
     }
 
-    pub fn read_symlink(&self) -> Result<Path, Exception> {
+    pub fn read_symlink(&self) -> Result<Path, Error> {
         if self.kind() != PathType::Symlink {
             return Err((FileSystemError::PathIsNotSymlink, self.clone()).into());
         }
@@ -986,9 +1070,9 @@ impl Path {
         }
     }
 
-    pub fn create_symlink(&self, to: impl Into<Path>) -> Result<Path, Exception> {
+    pub fn create_symlink(&self, to: impl Into<Path>) -> Result<Path, Error> {
         let from = self.canonicalize().map_err(|e| {
-            Into::<Exception>::into((FileSystemError::CreateSymlink, self.clone(), e.to_string()))
+            Into::<Error>::into((FileSystemError::CreateSymlink, self.clone(), e.to_string()))
         })?;
         let to = to.into();
         let to: Path = match to.status() {
@@ -1022,7 +1106,11 @@ impl Path {
     }
 
     pub fn parent(&self) -> Option<Path> {
-        let parent = self.path().parent().map(|p| p.display().to_string()).unwrap_or(String::new());
+        let parent = self
+            .path()
+            .parent()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|| String::new());
         let path = Path::from(if parent.trim().is_empty() {
             format!(".{}", MAIN_SEPARATOR_STR)
         } else {
@@ -1096,52 +1184,59 @@ impl Path {
         self.path().to_path_buf()
     }
 
-    pub fn get_or_create_parent_dir(&self) -> Result<Path, Exception> {
+    pub fn get_or_create_parent_dir(&self) -> Result<Path, Error> {
         Ok(self.makedirs()?.parent().unwrap())
     }
 
-    pub fn mkdir(&self) -> Result<Path, Exception> {
-        let path = self.canonicalize()?;
+    pub fn mkdir(&self) -> Result<Path, Error> {
+        let mut path = self.clone();
         if !path.exists() || path.is_dir() {
             match std::fs::create_dir_all(&path) {
                 Ok(_) => {
-                    path.node().set_mode(0o0700)?;
-                    Ok(path.clone())
+                    path.set_mode(0o0700)?;
                 },
-                Err(e) => Err((FileSystemError::CreateDirectory, path, format!("{}", e)).into()),
+                Err(e) =>
+                    return Err((
+                        FileSystemError::CreateDirectory,
+                        path,
+                        format!("Path::mkdir():{} {}", line!(), e),
+                    )
+                        .into()),
             }
-        } else {
-            Err((
-                FileSystemError::CreateDirectory,
-                path.clone(),
-                format!("({}) exists", path.kind()),
-            )
-                .into())
+        } else
+        // else: folder exists, no problem at all but set permissions to 0700 for cybersecurity's sake
+        {
+            path.set_mode(0o0700).map_err(|e| {
+                (FileSystemError::SetMode, &path, format!("Path::mkdir():{} {}", line!(), e))
+            })?;
         }
+        Ok(path)
     }
 
-    pub fn makedirs(&self) -> Result<Path, Exception> {
+    pub fn makedirs(&self) -> Result<Path, Error> {
         self.parent()
             .ok_or_else(|| {
-                Into::<Exception>::into((
+                Into::<Error>::into((
                     FileSystemError::CreateDirectory,
                     self.clone(),
-                    format!("ain't got no parents"),
+                    format!("Path::makedirs():{} ain't got no parents", line!()),
                 ))
             })?
             .mkdir()?;
         Ok(self.clone())
     }
 
-    pub fn list(&self) -> Result<Vec<Path>, Exception> {
+    pub fn list(&self) -> Result<Vec<Path>, Error> {
         if !self.try_canonicalize().is_dir() {
-            return Err(Exception::ReadDirError(format!("{} is not a folder", &self)));
+            return Err(Error::ReadDirError(format!("{} is not a folder", &self)));
         }
-        Ok(std::fs::read_dir(&self)?
+        let mut paths: Vec<Path> = std::fs::read_dir(&self)?
             .filter(|dir_entry| dir_entry.is_ok())
             .map(|dir_entry| dir_entry.unwrap())
             .map(|dir_entry| Path::from(dir_entry))
-            .collect())
+            .collect();
+        sort_paths(&mut paths);
+        Ok(paths)
     }
 }
 impl NodeStack {
@@ -1165,20 +1260,9 @@ impl NodeStack {
     }
 }
 
-impl Display for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &nodoubles(&self.inner))
-    }
-}
-impl std::fmt::Debug for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\"", &nodoubles(&self.inner))
-    }
-}
-
 impl Into<String> for Path {
     fn into(self) -> String {
-        self.inner.clone()
+        self.inner_string()
     }
 }
 
@@ -1252,33 +1336,33 @@ impl From<&&String> for Path {
 }
 
 impl FromStr for Path {
-    type Err = Exception;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Path::new(s))
+        Ok(Path::raw(s.to_string()))
     }
 }
 
 impl From<String> for Path {
     fn from(p: String) -> Path {
-        Path::new(p.as_str())
+        Path::raw(p)
     }
 }
 
 impl From<std::path::PathBuf> for Path {
-    fn from(p: std::path::PathBuf) -> Path {
-        Path::new(&format!("{}", p.display()))
+    fn from(path_buf: std::path::PathBuf) -> Path {
+        Path::from_path_buf(&path_buf)
     }
 }
 impl From<&std::path::PathBuf> for Path {
-    fn from(p: &std::path::PathBuf) -> Path {
-        Path::new(&format!("{}", p.display()))
+    fn from(path_buf: &std::path::PathBuf) -> Path {
+        Path::from_path_buf(path_buf)
     }
 }
 
 impl From<&std::path::Path> for Path {
-    fn from(p: &std::path::Path) -> Path {
-        Path::new(&format!("{}", p.display()))
+    fn from(path: &std::path::Path) -> Path {
+        Path::from_std_path(path)
     }
 }
 
@@ -1338,7 +1422,7 @@ impl Node {
         Permissions::from_mode(self.mode)
     }
 
-    pub fn set_mode(&mut self, mode: u32) -> Result<Node, Exception> {
+    pub fn set_mode(&mut self, mode: u32) -> Result<Node, Error> {
         let path = self.path();
         match std::fs::metadata(&path) {
             Ok(meta) => {
@@ -1346,7 +1430,11 @@ impl Node {
                 p.set_mode(mode);
                 Ok(Node::from_metadata(path, meta))
             },
-            Err(e) => Err(Into::<Exception>::into((FileSystemError::SetMode, path, e.to_string()))),
+            Err(e) => Err(Into::<Error>::into((
+                FileSystemError::SetMode,
+                path,
+                format!("Node::set_mode():{} {}", line!(), e),
+            ))),
         }
     }
 
@@ -1494,4 +1582,22 @@ impl Node {
             },
         }
     }
+}
+pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
+    b.split().len().partial_cmp(&a.split().len())
+}
+pub(crate) fn partial_cmp_paths_by_length(a: &Path, b: &Path) -> Option<Ordering> {
+    b.is_dir()
+        .partial_cmp(&a.is_dir())
+        .partial_cmp(&b.to_string().len().partial_cmp(&a.to_string().len()))
+}
+pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
+    b.is_dir().cmp(&a.is_dir()).cmp(&a.split().len().cmp(&b.split().len()))
+}
+pub(crate) fn cmp_paths_by_length(a: &Path, b: &Path) -> Ordering {
+    b.is_dir().cmp(&a.is_dir()).cmp(&a.to_string().len().cmp(&b.to_string().len()))
+}
+pub fn sort_paths(paths: &mut Vec<Path>) {
+    paths.sort_by(|a, b| cmp_paths_by_length(&a, &b));
+    paths.sort_by(|a, b| cmp_paths_by_parts(&a, &b));
 }

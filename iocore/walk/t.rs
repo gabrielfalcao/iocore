@@ -6,17 +6,17 @@
 //   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
 //     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 
-use crate::exceptions::Exception;
+use crate::errors::Error;
 use crate::fs::{Node, Path};
 
 pub type Matcher = fn(&Path, &Node) -> bool;
-pub type ErrorHandler = fn(&Path, Exception) -> Option<Exception>;
+pub type ErrorHandler = fn(&Path, Error) -> Option<Error>;
 pub type MaxDepth = usize;
 pub type Depth = usize;
 
 pub trait WalkProgressHandler: Send + Sync + 'static {
     fn path_matching(&mut self, path: &Path, node: &Node) -> bool;
-    fn error(&mut self, _path_: &Path, _exception_: Exception) -> Option<Exception> {
+    fn error(&mut self, _path_: &Path, _exception_: Error) -> Option<Error> {
         None
     }
 }

@@ -39,7 +39,7 @@
 extern crate lazy_static;
 pub mod coreio;
 pub mod env;
-pub mod exceptions;
+pub mod errors;
 pub mod fs;
 pub mod io;
 pub mod sh;
@@ -48,7 +48,7 @@ pub mod walk;
 
 pub use coreio::*;
 pub use env::*;
-pub use exceptions::*;
+pub use errors::*;
 pub use fs::*;
 pub use io::*;
 pub use sh::*;
