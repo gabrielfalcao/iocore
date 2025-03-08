@@ -16,6 +16,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
       - name: check
         uses: actions-rs/cargo@v1
         with:
@@ -37,6 +38,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
       - name: check
         uses: actions-rs/cargo@v1
         with:
