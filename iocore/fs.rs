@@ -7,11 +7,11 @@
 //     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 pub mod errors;
 pub mod ls_node_type;
-pub mod path_utils;
 pub mod node;
 pub mod opts;
 pub mod path_status;
 pub mod path_type;
+pub mod path_utils;
 pub mod perms;
 pub mod size;
 pub mod timed;
@@ -19,7 +19,7 @@ pub mod timed;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::fs::{File, Permissions};
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -31,11 +31,11 @@ use std::string::ToString;
 
 pub use errors::*;
 pub use ls_node_type::*;
-pub use path_utils::*;
 pub use node::*;
 pub use opts::*;
 pub use path_status::*;
 pub use path_type::*;
+pub use path_utils::*;
 pub use perms::*;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
@@ -926,6 +926,43 @@ impl Path {
             .collect();
         sort_paths(&mut paths);
         Ok(paths)
+    }
+}
+
+impl PartialEq for Path {
+    fn eq(&self, other: &Self) -> bool {
+        self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()
+    }
+}
+impl Eq for Path {}
+
+impl PartialOrd for Path {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        partial_cmp_paths_by_length(self, other)
+            .partial_cmp(&partial_cmp_paths_by_parts(self, other))
+    }
+}
+impl Ord for Path {
+    fn cmp(&self, other: &Self) -> Ordering {
+        cmp_paths_by_length(self, other).cmp(&cmp_paths_by_parts(self, other))
+    }
+}
+impl Debug for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:#?}", &self.inner)
+    }
+}
+impl Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", &self.inner)
+    }
+}
+impl Hash for Path {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut parts = BTreeSet::<String>::new();
+        parts.insert(self.kind().to_string());
+        parts.insert(self.try_canonicalize().to_string());
+        Vec::from_iter(parts.into_iter()).join("%").hash(state);
     }
 }
 
