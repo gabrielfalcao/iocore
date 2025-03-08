@@ -47,62 +47,20 @@ use crate::errors::Error;
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 
-
-impl Hash for Path {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut parts = BTreeSet::<String>::new();
-        parts.insert(self.kind().to_string());
-        parts.insert(self.try_canonicalize().to_string());
-        Vec::from_iter(parts.into_iter()).join("%").hash(state);
-    }
-}
-impl PartialEq for Path {
-    fn eq(&self, other: &Self) -> bool {
-        self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()
-    }
-}
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Path {
     inner: String,
 }
 
-impl Eq for Path {}
-impl PartialOrd for Path {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        partial_cmp_paths_by_length(self, other)
-            .partial_cmp(&partial_cmp_paths_by_parts(self, other))
-    }
-}
-impl Ord for Path {
-    fn cmp(&self, other: &Self) -> Ordering {
-        cmp_paths_by_length(self, other).cmp(&cmp_paths_by_parts(self, other))
-    }
-}
-impl Display for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &self.inner)
-    }
-}
-impl std::fmt::Debug for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:#?}", &self.inner)
-    }
-}
-
 impl Path {
     pub fn new(path: impl std::fmt::Display) -> Path {
-        let path = path.to_string();
-        let string = remove_duplicate_separators(path);
-        let string = if string.starts_with("~/") {
-            string.replacen("~/", &crate::TILDE.to_string(), 1)
-        } else {
-            string.to_string()
-        };
-        Path { inner: string }
+        match Path::safe(path) {
+            Ok(path) => path,
+            Err(message) => panic!("{}", message)
+        }
     }
-
     pub fn safe(path: impl std::fmt::Display) -> Result<Path, Error> {
+        let path = path.to_string();
         let string = remove_duplicate_separators(path);
         let string = if string.starts_with("~/") {
             string.replacen("~/", &crate::TILDE.to_string(), 1)
