@@ -18,5 +18,6 @@ stubs.*
 *[.]json
 *[.]pdf
 [.]hg.*
-tests/*
 *.test
+tests/*
+!tests/*.rs
