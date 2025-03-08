@@ -134,3 +134,10 @@ impl From<sanitation::Error<'_>> for Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+}
+impl Eq for Error {}

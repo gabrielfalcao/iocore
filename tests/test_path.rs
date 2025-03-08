@@ -1,4 +1,6 @@
-use iocore::{Path, User};
+use std::path::MAIN_SEPARATOR_STR;
+
+use iocore::{Error, Path, User};
 use iocore_test::{folder_path, path_to_test_file};
 
 #[test]
@@ -160,4 +162,24 @@ fn test_path_directory() {
     assert!(Path::directory(&existing_directory_path_string).is_ok());
     Path::directory(&existing_directory_path_string).unwrap().delete().unwrap();
     assert!(Path::directory(&existing_directory_path_string).is_err());
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn test_path_safe() {
+    let path_string = (0..63)
+        .map(|_| format!("path"))
+        .collect::<Vec<String>>()
+        .join(MAIN_SEPARATOR_STR);
+    assert_eq!(Path::safe(path_string), Err(Error::FileSystemError(String::from("iocore::fs::Path path too long in \"macos\": \"path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path\""))));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn test_path_safe() {
+    let path_string = (0..255)
+        .map(|_| format!("path"))
+        .collect::<Vec<String>>()
+        .join(MAIN_SEPARATOR_STR);
+    assert_eq!(Path::safe(path_string), Err(Error::FileSystemError(String::from("iocore::fs::Path path too long in \"linux\": \"path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path\""))));
 }
