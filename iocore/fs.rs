@@ -6,7 +6,11 @@
 //   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
 //     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 pub mod errors;
+pub mod ls_node_type;
+pub mod node;
 pub mod opts;
+pub mod path_status;
+pub mod path_type;
 pub mod perms;
 pub mod size;
 pub mod timed;
@@ -18,14 +22,18 @@ use std::fmt::Display;
 use std::fs::{File, Permissions};
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
+use std::os::unix::fs::PermissionsExt;
 use std::path::MAIN_SEPARATOR_STR;
 use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
 
 pub use errors::*;
+pub use ls_node_type::*;
+pub use node::*;
 pub use opts::*;
+pub use path_status::*;
+pub use path_type::*;
 pub use perms::*;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
@@ -33,14 +41,10 @@ pub use size::*;
 pub use timed::*;
 
 use crate::errors::Error;
-pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 
+pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Path {
-    inner: String,
-}
 pub fn remove_trailing_slash(haystack: &str) -> String {
     let regex = regex::Regex::new(r"/+$").unwrap();
     regex.replace_all(haystack, "").to_string()
@@ -136,6 +140,12 @@ impl PartialEq for Path {
         self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()
     }
 }
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Path {
+    inner: String,
+}
+
 impl Eq for Path {}
 impl PartialOrd for Path {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -156,206 +166,6 @@ impl Display for Path {
 impl std::fmt::Debug for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:#?}", &self.inner)
-    }
-}
-
-#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Node {
-    path: Path,
-    pub ino: u64,
-    pub gid: u32,
-    pub uid: u32,
-    pub size: u64,
-    pub is_dir: bool,
-    pub is_file: bool,
-    pub is_symlink: bool,
-    accessed: Option<DateTimeNode>,
-    created: Option<DateTimeNode>,
-    modified: Option<DateTimeNode>,
-    pub mode: u32,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Copy)]
-pub enum PathType {
-    File,
-    Symlink,
-    Setuid,
-    Directory,
-    None,
-}
-impl Hash for PathType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        vec![
-            module_path!(),
-            "PathType",
-            self.to_str()[0..1].to_uppercase().as_str(),
-            self.to_str()[1..].to_lowercase().as_str(),
-        ]
-        .join("::")
-        .hash(state);
-    }
-}
-
-impl PathType {
-    pub fn to_str(self) -> &'static str {
-        match self {
-            Self::File => "file",
-            Self::Symlink => "symlink",
-            Self::Setuid => "setuid",
-            Self::Directory => "directory",
-            Self::None => "none",
-        }
-    }
-}
-impl Display for PathType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.to_str())
-    }
-}
-pub trait ToPathType: std::fmt::Display {}
-impl<T> ToPathType for T where T: Into<PathType> + std::fmt::Display {}
-
-impl Into<String> for PathType {
-    fn into(self) -> String {
-        self.to_str().to_string()
-    }
-}
-impl Into<&'static str> for PathType {
-    fn into(self) -> &'static str {
-        self.to_str()
-    }
-}
-
-impl From<&str> for PathType {
-    fn from(p: &str) -> PathType {
-        match p.to_lowercase().as_str() {
-            "file" => Self::File,
-            "symlink" => Self::Symlink,
-            "setuid" => Self::Setuid,
-            "directory" => Self::Directory,
-            _ => Self::None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
-pub enum PathStatus {
-    None,
-    ReadOnlyDirectory,
-    ReadOnlyFile,
-    ReadOnlySetuid,
-    ReadOnlySymlink,
-    WritableDirectory,
-    WritableFile,
-    WritableSetuid,
-    WritableSymlink,
-}
-
-impl PathStatus {
-    pub fn to_str(self) -> &'static str {
-        match self {
-            Self::ReadOnlyDirectory => "read-only directory",
-            Self::ReadOnlyFile => "read-only file",
-            Self::ReadOnlySetuid => "read-only setuid",
-            Self::ReadOnlySymlink => "read-only symlink",
-            Self::WritableFile => "writable file",
-            Self::None => "none",
-            Self::WritableDirectory => "writable directory",
-            Self::WritableSetuid => "writable setuid",
-            Self::WritableSymlink => "writable symlink",
-        }
-    }
-}
-
-impl Into<&'static str> for PathStatus {
-    fn into(self) -> &'static str {
-        self.to_str()
-    }
-}
-
-impl Into<String> for PathStatus {
-    fn into(self) -> String {
-        self.to_str().to_string()
-    }
-}
-
-impl Display for PathStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.to_str())
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
-pub enum LsNodeType {
-    File,
-    Symlink,
-    Setuid,
-    Directory,
-    None,
-}
-
-impl Into<PathType> for LsNodeType {
-    fn into(self) -> PathType {
-        match self {
-            Self::File => PathType::File,
-            Self::Symlink => PathType::Symlink,
-            Self::Setuid => PathType::Setuid,
-            Self::Directory => PathType::Directory,
-            Self::None => PathType::None,
-        }
-    }
-}
-impl From<PathType> for LsNodeType {
-    fn from(p: PathType) -> Self {
-        match p {
-            PathType::File => Self::File,
-            PathType::Symlink => Self::Symlink,
-            PathType::Setuid => Self::Setuid,
-            PathType::Directory => Self::Directory,
-            PathType::None => Self::None,
-        }
-    }
-}
-impl LsNodeType {
-    fn into_char(self) -> char {
-        match self {
-            Self::File => '-',
-            Self::Symlink => 'l',
-            Self::Setuid => 's',
-            Self::Directory => 'd',
-            Self::None => '?',
-        }
-    }
-}
-
-impl Into<char> for LsNodeType {
-    fn into(self) -> char {
-        self.into_char()
-    }
-}
-impl Into<String> for LsNodeType {
-    fn into(self) -> String {
-        String::from(self.into_char())
-    }
-}
-impl ToString for LsNodeType {
-    fn to_string(&self) -> String {
-        String::from(self.clone().into_char())
-    }
-}
-
-pub struct NodeStack {
-    stack: VecDeque<Node>,
-}
-
-impl Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &self.path())
-    }
-}
-impl std::fmt::Debug for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:#?}", &self.path().to_string())
     }
 }
 
@@ -1239,26 +1049,6 @@ impl Path {
         Ok(paths)
     }
 }
-impl NodeStack {
-    pub fn new() -> NodeStack {
-        NodeStack {
-            stack: VecDeque::<Node>::new(),
-        }
-    }
-
-    pub fn push(&mut self, node: &Node) -> usize {
-        self.stack.push_front(node.clone());
-        self.len()
-    }
-
-    pub fn pop(&mut self) -> Option<Node> {
-        self.stack.pop_front()
-    }
-
-    pub fn len(&self) -> usize {
-        self.stack.len()
-    }
-}
 
 impl Into<String> for Path {
     fn into(self) -> String {
@@ -1366,223 +1156,6 @@ impl From<&std::path::Path> for Path {
     }
 }
 
-impl From<std::fs::DirEntry> for Node {
-    fn from(p: std::fs::DirEntry) -> Node {
-        Node::from(p.path())
-    }
-}
-
-impl From<std::path::PathBuf> for Node {
-    fn from(p: std::path::PathBuf) -> Node {
-        Node::new(p)
-    }
-}
-
-impl From<&std::path::Path> for Node {
-    fn from(p: &std::path::Path) -> Node {
-        Node::new(p)
-    }
-}
-impl AsRef<std::path::Path> for Node {
-    fn as_ref(&self) -> &std::path::Path {
-        self.path.path()
-    }
-}
-impl From<Path> for Node {
-    fn from(p: Path) -> Node {
-        Node::new(p.to_path_buf())
-    }
-}
-
-impl From<&Path> for Node {
-    fn from(p: &Path) -> Node {
-        Node::new(p.to_path_buf())
-    }
-}
-
-impl From<&str> for Node {
-    fn from(p: &str) -> Node {
-        Node::new(Path::new(p).to_path_buf())
-    }
-}
-impl From<&String> for Node {
-    fn from(p: &String) -> Node {
-        Node::new(Path::new(p).to_path_buf())
-    }
-}
-
-impl From<String> for Node {
-    fn from(p: String) -> Node {
-        Node::new(Path::new(&p).to_path_buf())
-    }
-}
-
-impl Node {
-    pub fn permissions(&self) -> Permissions {
-        Permissions::from_mode(self.mode)
-    }
-
-    pub fn set_mode(&mut self, mode: u32) -> Result<Node, Error> {
-        let path = self.path();
-        match std::fs::metadata(&path) {
-            Ok(meta) => {
-                let mut p = meta.permissions();
-                p.set_mode(mode);
-                Ok(Node::from_metadata(path, meta))
-            },
-            Err(e) => Err(Into::<Error>::into((
-                FileSystemError::SetMode,
-                path,
-                format!("Node::set_mode():{} {}", line!(), e),
-            ))),
-        }
-    }
-
-    pub fn accessed(&self) -> Option<DateTimeNode> {
-        self.accessed.clone()
-    }
-
-    pub fn created(&self) -> Option<DateTimeNode> {
-        self.created.clone()
-    }
-
-    pub fn modified(&self) -> Option<DateTimeNode> {
-        self.modified.clone()
-    }
-
-    pub fn path_type(&self) -> PathType {
-        if self.is_file {
-            PathType::File
-        } else if self.is_dir {
-            PathType::Directory
-        } else if self.is_symlink {
-            PathType::Symlink
-        } else {
-            PathType::None
-        }
-    }
-
-    pub fn path_status(&self) -> PathStatus {
-        let permissions = self.permissions();
-        let readonly = permissions.readonly();
-
-        match self.path_type() {
-            PathType::Directory =>
-                if readonly {
-                    PathStatus::ReadOnlyDirectory
-                } else {
-                    PathStatus::WritableDirectory
-                },
-            PathType::File =>
-                if readonly {
-                    PathStatus::ReadOnlyFile
-                } else {
-                    PathStatus::WritableFile
-                },
-            PathType::Symlink =>
-                if readonly {
-                    PathStatus::ReadOnlySymlink
-                } else {
-                    PathStatus::WritableSymlink
-                },
-            PathType::Setuid =>
-                if readonly {
-                    PathStatus::ReadOnlySetuid
-                } else {
-                    PathStatus::WritableSetuid
-                },
-            PathType::None => PathStatus::None,
-        }
-    }
-
-    pub fn lst(&self) -> LsNodeType {
-        self.path_type().into()
-    }
-
-    pub fn path(&self) -> Path {
-        self.path.clone()
-    }
-
-    pub fn filename(&self) -> String {
-        self.path().name()
-    }
-
-    pub fn is_writable_file(&self) -> bool {
-        match self.path_status() {
-            PathStatus::WritableFile | PathStatus::None => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_writable_directory(&self) -> bool {
-        match self.path_status() {
-            PathStatus::WritableFile | PathStatus::None => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_writable_symlink(&self) -> bool {
-        match self.path_status() {
-            PathStatus::WritableFile | PathStatus::None => true,
-            _ => false,
-        }
-    }
-
-    pub fn exists(&self) -> bool {
-        self.path_status() != PathStatus::None
-    }
-
-    pub fn from_metadata(path: impl Into<Path>, meta: std::fs::Metadata) -> Node {
-        let accessed: Option<DateTimeNode> = match meta.accessed() {
-            Ok(s) => Some(s.into()),
-            Err(_) => None,
-        };
-        let modified: Option<DateTimeNode> = match meta.modified() {
-            Ok(s) => Some(s.into()),
-            Err(_) => None,
-        };
-        let created: Option<DateTimeNode> = match meta.created() {
-            Ok(s) => Some(s.into()),
-            Err(_) => None,
-        };
-        let ft = meta.file_type();
-        Node {
-            ino: meta.ino(),
-            gid: meta.gid(),
-            uid: meta.uid(),
-            size: meta.size(),
-            accessed: accessed,
-            created: created,
-            modified: modified,
-            is_file: ft.is_file(),
-            is_dir: ft.is_dir(),
-            is_symlink: ft.is_symlink(),
-            mode: meta.mode(),
-            path: path.into(),
-        }
-    }
-
-    pub fn new(path: impl Into<Path>) -> Node {
-        let path = path.into();
-        match std::fs::symlink_metadata(&path) {
-            Ok(meta) => Node::from_metadata(path, meta),
-            Err(_) => Node {
-                ino: u64::MAX,
-                gid: u32::MAX,
-                uid: u32::MAX,
-                accessed: None,
-                created: None,
-                modified: None,
-                is_dir: false,
-                is_file: false,
-                is_symlink: false,
-                mode: u32::MAX,
-                path: path.into(),
-                size: u64::MAX,
-            },
-        }
-    }
-}
 pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
     b.split().len().partial_cmp(&a.split().len())
 }
