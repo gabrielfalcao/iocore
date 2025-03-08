@@ -13,7 +13,7 @@ fn test_walk_nodes_glob() -> Result<(), Error> {
             .iter()
             .map(|entry| entry.node().filename())
             .collect::<Vec<String>>(),
-        vec!["coreio.rs", "exceptions.rs", "fs.rs", "lib.rs", "sh.rs", "sys.rs", "walk.rs"]
+        vec!["coreio.rs", "errors.rs", "walk.rs", "env.rs", "lib.rs", "sys.rs", "fs.rs", "sh.rs"]
     );
     Ok(())
 }
