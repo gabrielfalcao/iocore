@@ -227,11 +227,11 @@ fn test_path_file() {
 }
 
 
-// #[test]
-// fn test_path_directory() {
-//     let existing_directory_path_string = folder_path!("test_path_directory");
-//
-//     assert!(Path::directory(&existing_directory_path_string).is_ok());
-//     Path::directory(&existing_directory_path_string).unwrap().delete().unwrap();
-//     assert!(Path::directory(&existing_directory_path_string).is_err());
-// }
+#[test]
+fn test_path_directory() {
+    let existing_directory_path_string = folder_path!("test_path_directory").mkdir().unwrap();
+
+    assert!(Path::directory(&existing_directory_path_string).is_ok());
+    Path::directory(&existing_directory_path_string).unwrap().delete().unwrap();
+    assert!(Path::directory(&existing_directory_path_string).is_err());
+}
