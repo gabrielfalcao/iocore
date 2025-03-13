@@ -41,7 +41,7 @@
 
 
 
-[![IOՑ𐔙](https://github.com/gabrielfalcao/iocore/actions/workflows/zap.yml/badge.svg)](https://github.com/gabrielfalcao/iocore/actions/workflows/zap.yml)
+[![Github Action](https://github.com/gabrielfalcao/iocore/actions/workflows/zap.yml/ci.svg)](https://github.com/gabrielfalcao/iocore/actions/workflows/zap.yml)
 
 
 
