@@ -1,6 +1,7 @@
+use std::io::Write;
 use std::path::MAIN_SEPARATOR_STR;
 
-use iocore::{Error, Path, User};
+use iocore::{Error, Path, PathStatus, PathType, User};
 use iocore_test::{folder_path, path_to_test_file};
 
 #[test]
@@ -182,4 +183,70 @@ fn test_path_safe() {
         .collect::<Vec<String>>()
         .join(MAIN_SEPARATOR_STR);
     assert_eq!(Path::safe(path_string), Err(Error::FileSystemError(String::from("iocore::fs::Path path too long in \"linux\": \"path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path\""))));
+}
+
+#[test]
+fn test_path_from_path_buf() {
+    let mut pathbuf = std::path::PathBuf::new();
+    pathbuf.push("/resolved");
+    pathbuf.push("path");
+
+    assert_eq!(Path::from_path_buf(&pathbuf), Path::raw("/resolved/path"));
+}
+
+#[test]
+fn test_path_from_std_path() {
+    let mut pathbuf = std::path::PathBuf::new();
+    pathbuf.push("/resolved");
+    pathbuf.push("path");
+    let std_path = pathbuf.as_path();
+    assert_eq!(Path::from_std_path(std_path), Path::raw("/resolved/path"));
+}
+
+#[test]
+fn test_path_kind() {
+    let file = path_to_test_file!("test_path_kind_file").write(&[]).unwrap();
+    let folder = folder_path!("test_path_kind_folder").mkdir().unwrap();
+    assert_eq!(file.kind(), PathType::File);
+    assert_eq!(folder.kind(), PathType::Directory);
+}
+
+#[test]
+fn test_path_inner_string() {
+    assert_eq!(Path::raw("string").inner_string(), String::from("string"));
+}
+
+#[test]
+fn test_path_str() {
+    assert_eq!(Path::raw("&'static str").as_str(), "&'static str");
+}
+
+#[test]
+fn test_path_() {
+    assert_eq!(Path::raw("&'static str").as_str(), "&'static str");
+}
+
+#[test]
+fn test_path_status() {
+    let file = path_to_test_file!("test_path_status_file").write(&[]).unwrap();
+    let folder = folder_path!("test_path_status_folder").mkdir().unwrap();
+    assert_eq!(file.status(), PathStatus::WritableFile);
+    assert_eq!(folder.status(), PathStatus::WritableDirectory);
+}
+
+#[test]
+fn test_path_create() {
+    let path = path_to_test_file!("test_path_create").write(&[]).unwrap();
+    let mut created = path.create().unwrap();
+    created.write(b"resolved").unwrap();
+    assert_eq!(path.read().unwrap(), "resolved");
+}
+
+#[test]
+fn test_path_append() {
+    let path = path_to_test_file!("test_path_append").write(&[]).unwrap();
+    let mut append = path.create().unwrap();
+    append.write(b"resolved").unwrap();
+    path.append(b"\nend").unwrap();
+    assert_eq!(path.read().unwrap(), "resolved\nend");
 }

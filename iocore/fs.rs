@@ -104,7 +104,7 @@ impl Path {
         let t = crate::TILDE.to_string();
         let s = self.to_string();
         if s.starts_with(&t) {
-            Path::new(s.replacen(&t, "~", 1)) //UGF0aDo6bmV3KHMucmVwbGFjZW4oJnQsICZmb3JtYXQhKCJ+e30iLCBNQUlOX1NFUEFSQVRPUl9TVFIpLCAxKSk=
+            Path::new(s.replacen(&t, "~", 1))
         } else {
             self.clone()
         }
@@ -156,9 +156,6 @@ impl Path {
     }
 
     pub fn relative_to(&self, t: &Path) -> Path {
-        // let s = self;
-        // dbg!(s, s.exists());
-        // dbg!(t, t.exists());
         let canonical_self = self.try_canonicalize();
         let canonical_t = t.try_canonicalize();
         if canonical_self.to_string() == canonical_t.to_string() {
@@ -172,65 +169,35 @@ impl Path {
         };
         let t = if canonical_t.exists() { canonical_t.to_string() } else { t.to_string() };
 
-        // dbg!(s.len() > t.len());
         if s.len() > t.len() {
             if s.starts_with(&t) {
                 let new_path = repl_beg(&add_trailing_separator(&t), &s, "");
-                // dbg!(new_path);
                 return Path::new(new_path);
             }
         }
 
-        // dbg!(t.len() < s.len());
         if t.len() < s.len() {
             if t.starts_with(&s) {
                 let new_path = repl_beg(&add_trailing_separator(&s), &t, "");
-                // dbg!(new_path);
                 return Path::new(new_path);
             }
         }
 
-        // dbg!(s.len() < t.len());
         if s.len() < t.len() {
-            // dbg!(&t, &s);
             if t.starts_with(&s) {
                 let t_without_s =
                     remove_trailing_slash(&remove_start(&add_trailing_separator(&s), &t));
                 let sub_path = path_str_to_relative_subpath(&t_without_s);
-                // dbg!(&t_without_s);
-                // assert_ne!(&t_without_s, &t);
-                // return Path::raw(dbg!(sub_path));
                 return Path::raw(sub_path);
             }
         }
-        // Path::new(if !s.starts_with("./") { remove_trailing_slash(&s) } else { s })
         let new_path = Path::raw(&t);
-        // let without_absolute_part = remove_absolute_path(&new_path);
-        // dbg!(s, t, &new_path, &without_absolute_part);
-        // dbg!(s, t, &new_path);
         return new_path;
     }
 
     pub fn relative_to_cwd(&self) -> Path {
         self.relative_to(&Path::cwd())
     }
-
-    // fn relative_to_parent(&self, certain_parent: &Path) -> Path {
-    //     if self.to_string() == certain_parent.to_string() {
-    //         return Path::new("./");
-    //     }
-
-    //     let s = remove_duplicate_separators(self.try_absolute().to_string());
-    //     let certain_parent = certain_parent.try_canonicalize().to_string();
-
-    //     let s = remove_duplicate_separators(if s.starts_with(&certain_parent) { s.replacen(&certain_parent, "./", 1) } else { s });
-    //     let s = if s.len() > 2 && s.starts_with("./") {
-    //         remove_trailing_slash(&s.replacen("./", "", 1))
-    //     } else {
-    //         s
-    //     };
-    //     Path::new(if !s.starts_with("./") { remove_trailing_slash(&s) } else { s })
-    // }
 
     pub fn file(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
