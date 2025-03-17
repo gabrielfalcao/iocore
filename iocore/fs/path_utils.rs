@@ -34,6 +34,11 @@ pub fn remove_start(pattern: &str, haystack: &str) -> String {
 pub fn remove_duplicate_separators(p: impl std::fmt::Display) -> String {
     let e = Regex::new(&format!("[{}]+", MAIN_SEPARATOR_STR)).unwrap();
     let p = p.to_string();
+    remove_redundant_current_path(e.replace_all(&p, MAIN_SEPARATOR_STR).to_string())
+}
+pub fn remove_redundant_current_path(p: impl std::fmt::Display) -> String {
+    let e = Regex::new(&format!("[{}][.][{}]", MAIN_SEPARATOR_STR, MAIN_SEPARATOR_STR)).unwrap();
+    let p = p.to_string();
     e.replace_all(&p, MAIN_SEPARATOR_STR).to_string()
 }
 pub fn split_str_into_relative_subpath_parts(haystack: &str) -> Vec<String> {

@@ -1,7 +1,7 @@
 use iocore::{
     expand_home_regex, path_str_to_relative_subpath, remove_duplicate_separators, remove_end,
     remove_equal_prefix_from_path_strings, remove_start, remove_trailing_slash, repl_beg, repl_end,
-    split_str_into_relative_subpath_parts,
+    split_str_into_relative_subpath_parts, remove_redundant_current_path
 };
 
 #[test]
@@ -75,4 +75,8 @@ fn test_repl_beg() {
 #[test]
 fn test_repl_end() {
     assert_eq!(repl_end("x/y/z.bin", "a/b/c/x/y/z.bin", ""), "a/b/c/");
+}
+#[test]
+fn test_remove_redundant_current_path() {
+    assert_eq!(remove_redundant_current_path("a/./b/./c/"), "a/b/c/");
 }

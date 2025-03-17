@@ -56,9 +56,10 @@ impl Path {
     pub fn new(path: impl std::fmt::Display) -> Path {
         match Path::safe(path) {
             Ok(path) => path,
-            Err(message) => panic!("{}", message)
+            Err(message) => panic!("{}", message),
         }
     }
+
     pub fn safe(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = path.to_string();
         let string = remove_duplicate_separators(path);
@@ -156,8 +157,8 @@ impl Path {
     }
 
     pub fn relative_to(&self, t: &Path) -> Path {
-        let canonical_self = self.try_canonicalize();
-        let canonical_t = t.try_canonicalize();
+        let canonical_self = if self.exists() && t.exists() { self.try_canonicalize() } else { self.clone() };
+        let canonical_t = if self.exists() && t.exists() { t.try_canonicalize() } else { t.clone() };
         if canonical_self.to_string() == canonical_t.to_string() {
             return Path::raw("./");
         }
@@ -372,7 +373,12 @@ impl Path {
         self.parent().map(|p| p.join(&name)).unwrap_or_else(|| Path::new(&name))
     }
 
-    pub fn rename(&self, to: &Path, create_missing_parents_at_target: bool) -> Result<Path, Error> {
+    pub fn rename(
+        &self,
+        to: impl std::fmt::Display,
+        create_missing_parents_at_target: bool,
+    ) -> Result<Path, Error> {
+        let to = Path::raw(to.to_string());
         let to = match to.parent() {
             Some(_) => to.clone(),
             None => match self.parent() {

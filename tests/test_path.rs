@@ -251,3 +251,37 @@ fn test_path_append() {
     path.append(b"\nend").unwrap();
     assert_eq!(path.read().unwrap(), "resolved\nend");
 }
+
+#[test]
+fn test_path_with_filename() {
+    let path = Path::raw("path/with-filename.rs");
+    assert_eq!(path.with_filename("with-filename.go"), Path::raw("path/with-filename.go"));
+}
+
+#[test]
+fn test_relative_to_parent_to_child_no_trailing_slash_parent_exists_child_doesnt() {
+    let existing_folder_path = folder_path!(
+        "test_relative_to_parent_to_child_no_trailing_slash_parent_exists_child_doesnt/a/b/c"
+    )
+    .mkdir()
+    .unwrap();
+    let nonexisting_file_path = existing_folder_path.join("x/y/z.bin").delete().unwrap();
+    assert_eq!(
+        existing_folder_path.relative_to(&nonexisting_file_path).to_string(),
+        "../../../"
+    );
+}
+
+
+#[test]
+fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists() {
+    let nonexisting_folder_path = folder_path!(
+        "test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists/a/b/c"
+    ).delete()
+    .unwrap();
+    let existing_file_path = nonexisting_folder_path.join("x/y/z.bin").write(&[]).unwrap();
+    assert_eq!(
+        nonexisting_folder_path.relative_to(&existing_file_path).to_string(),
+        "../../../"
+    );
+}
