@@ -32,8 +32,8 @@ pub fn shell_command_vec_output(
 
 /// Utility function to spawn a command from a string rather than
 /// array of arguments and returns strings for stdout and stderr
-/// rather than Vec<u8>. Stdout and Stderr are sanitized for memory
-/// safety during string conversion.
+/// rather than [`Vec<u8>`]. Stdout and Stderr are sanitized for memory
+/// safety during [`String`] conversion.
 ///
 /// Returns a triple with `(exit code, stdout, stderr)`
 pub fn shell_command_string_output(
