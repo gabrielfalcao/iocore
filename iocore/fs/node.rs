@@ -1,10 +1,3 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 use std::fmt::Display;
 use std::fs::Permissions;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
@@ -17,7 +10,7 @@ use crate::fs::errors::FileSystemError;
 use crate::fs::ls_node_type::LsNodeType;
 use crate::fs::path_status::PathStatus;
 use crate::fs::path_type::PathType;
-use crate::fs::timed::DateTimeNode;
+use crate::fs::timed::PathDateTime;
 use crate::fs::Path;
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,9 +23,9 @@ pub struct Node {
     pub is_dir: bool,
     pub is_file: bool,
     pub is_symlink: bool,
-    accessed: Option<DateTimeNode>,
-    created: Option<DateTimeNode>,
-    modified: Option<DateTimeNode>,
+    accessed: Option<PathDateTime>,
+    created: Option<PathDateTime>,
+    modified: Option<PathDateTime>,
     pub mode: u32,
 }
 
@@ -119,15 +112,15 @@ impl Node {
         }
     }
 
-    pub fn accessed(&self) -> Option<DateTimeNode> {
+    pub fn accessed(&self) -> Option<PathDateTime> {
         self.accessed.clone()
     }
 
-    pub fn created(&self) -> Option<DateTimeNode> {
+    pub fn created(&self) -> Option<PathDateTime> {
         self.created.clone()
     }
 
-    pub fn modified(&self) -> Option<DateTimeNode> {
+    pub fn modified(&self) -> Option<PathDateTime> {
         self.modified.clone()
     }
 
@@ -214,15 +207,15 @@ impl Node {
     }
 
     pub fn from_metadata(path: impl Into<Path>, meta: std::fs::Metadata) -> Node {
-        let accessed: Option<DateTimeNode> = match meta.accessed() {
+        let accessed: Option<PathDateTime> = match meta.accessed() {
             Ok(s) => Some(s.into()),
             Err(_) => None,
         };
-        let modified: Option<DateTimeNode> = match meta.modified() {
+        let modified: Option<PathDateTime> = match meta.modified() {
             Ok(s) => Some(s.into()),
             Err(_) => None,
         };
-        let created: Option<DateTimeNode> = match meta.created() {
+        let created: Option<PathDateTime> = match meta.created() {
             Ok(s) => Some(s.into()),
             Err(_) => None,
         };

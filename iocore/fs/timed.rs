@@ -1,10 +1,3 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 use std::fmt::Display;
 use std::str::FromStr;
 use std::string::ToString;
@@ -14,29 +7,29 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone)]
-pub struct DateTimeNode {
+pub struct PathDateTime {
     t: DateTime<Local>,
 }
 
-impl From<SystemTime> for DateTimeNode {
-    fn from(st: SystemTime) -> DateTimeNode {
-        DateTimeNode { t: st.into() }
+impl From<SystemTime> for PathDateTime {
+    fn from(st: SystemTime) -> PathDateTime {
+        PathDateTime { t: st.into() }
     }
 }
 
-impl Display for DateTimeNode {
+impl Display for PathDateTime {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.human_friendly(None))
     }
 }
 
-impl std::fmt::Debug for DateTimeNode {
+impl std::fmt::Debug for PathDateTime {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:#?}", &self.t)
     }
 }
 
-impl Serialize for DateTimeNode {
+impl Serialize for PathDateTime {
     fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -45,27 +38,27 @@ impl Serialize for DateTimeNode {
     }
 }
 
-impl<'de> Deserialize<'de> for DateTimeNode {
+impl<'de> Deserialize<'de> for PathDateTime {
     fn deserialize<D>(de: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        Ok(DateTimeNode::from(DateTime::<Local>::deserialize(de)?))
+        Ok(PathDateTime::from(DateTime::<Local>::deserialize(de)?))
     }
 }
-impl From<DateTime<Local>> for DateTimeNode {
-    fn from(t: DateTime<Local>) -> DateTimeNode {
-        DateTimeNode { t }
+impl From<DateTime<Local>> for PathDateTime {
+    fn from(t: DateTime<Local>) -> PathDateTime {
+        PathDateTime { t }
     }
 }
 
-impl Into<DateTime<Local>> for DateTimeNode {
+impl Into<DateTime<Local>> for PathDateTime {
     fn into(self) -> DateTime<Local> {
         (&self).t.clone()
     }
 }
 
-impl DateTimeNode {
+impl PathDateTime {
     pub fn human_friendly(&self, t: Option<DateTime<Local>>) -> String {
         let day = self.t.format("%e").to_string().trim().to_string();
         let fmt = if self.t.format("%Y").to_string()
@@ -80,7 +73,7 @@ impl DateTimeNode {
     }
 }
 
-impl DateTimeNode {
+impl PathDateTime {
     pub fn year(&self) -> u16 {
         u16::from_str(&self.t.format("%Y").to_string()).unwrap()
     }
@@ -116,24 +109,24 @@ impl DateTimeNode {
         ]
     }
 }
-impl std::cmp::PartialEq for DateTimeNode {
+impl std::cmp::PartialEq for PathDateTime {
     fn eq(&self, other: &Self) -> bool {
         self.to_usize().eq(&other.to_usize())
     }
 }
-impl std::cmp::Eq for DateTimeNode {}
-impl std::cmp::PartialOrd for DateTimeNode {
+impl std::cmp::Eq for PathDateTime {}
+impl std::cmp::PartialOrd for PathDateTime {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.to_usize().partial_cmp(&other.to_usize())
     }
 }
-impl std::cmp::Ord for DateTimeNode {
+impl std::cmp::Ord for PathDateTime {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.to_usize().cmp(&other.to_usize())
     }
 }
 
-impl std::hash::Hash for DateTimeNode {
+impl std::hash::Hash for PathDateTime {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.to_usize().hash(state);
     }

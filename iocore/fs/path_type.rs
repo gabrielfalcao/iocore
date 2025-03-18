@@ -1,16 +1,8 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::string::ToString;
 
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub enum PathType {

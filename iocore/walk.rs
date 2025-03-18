@@ -1,10 +1,3 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 pub mod entry;
 pub mod info;
 pub mod t;
@@ -63,10 +56,7 @@ pub fn read_dir(
     Ok(result)
 }
 
-pub fn read_dir_size(
-    path: &Path,
-    progress: &mut impl FnMut(&Path, usize),
-) -> Result<Size, Error> {
+pub fn read_dir_size(path: &Path, progress: &mut impl FnMut(&Path, usize)) -> Result<Size, Error> {
     let info = Info::of(path);
     let mut size = info.size();
     let paths = read_dir(path, NoopProgressHandler)?;

@@ -1,10 +1,3 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
 pub mod errors;
 pub mod ls_node_type;
 pub mod node;
@@ -36,7 +29,7 @@ pub use opts::*;
 pub use path_status::*;
 pub use path_type::*;
 pub use path_utils::*;
-pub use perms::*;
+pub use perms::PathPermissions;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
 pub use size::*;
@@ -157,8 +150,13 @@ impl Path {
     }
 
     pub fn relative_to(&self, t: &Path) -> Path {
-        let canonical_self = if self.exists() && t.exists() { self.try_canonicalize() } else { self.clone() };
-        let canonical_t = if self.exists() && t.exists() { t.try_canonicalize() } else { t.clone() };
+        let canonical_self = if self.exists() && t.exists() {
+            self.try_canonicalize()
+        } else {
+            self.clone()
+        };
+        let canonical_t =
+            if self.exists() && t.exists() { t.try_canonicalize() } else { t.clone() };
         if canonical_self.to_string() == canonical_t.to_string() {
             return Path::raw("./");
         }

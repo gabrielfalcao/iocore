@@ -1,11 +1,3 @@
-//     /\\\\         /\\       /\\\\     /\\\\\\\    /\\\\\\\\
-//   /\\    /\\   /\\   /\\  /\\    /\\  /\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\\    /\\  /\\
-// /\\        /\\/\\       /\\        /\\/\ /\\      /\\\\\\
-// /\\        /\\/\\       /\\        /\\/\\  /\\    /\\
-//   /\\     /\\  /\\   /\\  /\\     /\\ /\\    /\\  /\\
-//     /\\\\        /\\\\      /\\\\     /\\      /\\/\\\\\\\\
-
 use std::process::{Command, Stdio};
 
 use sanitation::SString;
@@ -57,10 +49,7 @@ pub fn shell_command_string_output(
 /// Utility function to spawn a command from a string rather than
 /// array of arguments and returns the exit code. Stdout and Stderr
 /// are inherited from the current process.
-pub fn shell_command(
-    command: impl std::fmt::Display,
-    current_dir: impl Into<Path>,
-) -> Result<i32> {
+pub fn shell_command(command: impl std::fmt::Display, current_dir: impl Into<Path>) -> Result<i32> {
     let args = command
         .to_string()
         .split(" ")
