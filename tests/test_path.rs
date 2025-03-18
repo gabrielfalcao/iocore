@@ -1,8 +1,10 @@
 use std::io::Write;
+use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
-use iocore::{Error, Path, PathStatus, PathType, User};
+use iocore::{Error, Path, PathPermissions, PathStatus, PathType, User};
 use iocore_test::{folder_path, path_to_test_file};
+use trilobyte::TriloByte;
 
 #[test]
 fn test_path_join() {
@@ -272,16 +274,41 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_exists_child_doesnt
     );
 }
 
-
 #[test]
 fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists() {
     let nonexisting_folder_path = folder_path!(
         "test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists/a/b/c"
-    ).delete()
+    )
+    .delete()
     .unwrap();
     let existing_file_path = nonexisting_folder_path.join("x/y/z.bin").write(&[]).unwrap();
     assert_eq!(
         nonexisting_folder_path.relative_to(&existing_file_path).to_string(),
         "../../../"
+    );
+}
+
+#[test]
+fn test_path_permissions() {
+    let file_mode_640 = folder_path!().join("test_mode_640.file");
+    let metadata = std::fs::metadata(file_mode_640.path()).unwrap();
+
+    assert_eq!(metadata.mode(), 0o100640);
+
+    assert_eq!(
+        PathPermissions::from_u32(metadata.mode()).unwrap(),
+        PathPermissions {
+            user: TriloByte::from(0b0110),
+            group: TriloByte::from(0b100),
+            others: TriloByte::from(0b00),
+        }
+    );
+    assert_eq!(
+        file_mode_640.permissions(),
+        PathPermissions::from_u32(metadata.mode()).unwrap()
+    );
+    assert_eq!(
+        file_mode_640.mode(),
+        0o640,
     );
 }

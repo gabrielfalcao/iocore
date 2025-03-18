@@ -241,18 +241,18 @@ impl Node {
         match std::fs::symlink_metadata(&path) {
             Ok(meta) => Node::from_metadata(path, meta),
             Err(_) => Node {
-                ino: u64::MAX,
-                gid: u32::MAX,
-                uid: u32::MAX,
+                ino: u64::MIN,
+                gid: u32::MIN,
+                uid: u32::MIN,
                 accessed: None,
                 created: None,
                 modified: None,
                 is_dir: false,
                 is_file: false,
                 is_symlink: false,
-                mode: u32::MAX,
+                mode: u32::MIN,
                 path: path.into(),
-                size: u64::MAX,
+                size: u64::MIN,
             },
         }
     }

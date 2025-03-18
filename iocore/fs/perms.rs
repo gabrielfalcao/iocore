@@ -20,6 +20,10 @@ impl PathPermissions {
             .collect::<String>()
     }
 
+    pub fn into_u32(self) -> u32 {
+        u32::from_str_radix(&self.to_string_octal(), 8).unwrap()
+    }
+
     pub fn from_u32(val: u32) -> Result<PathPermissions, crate::Error> {
         let user = TriloByte::from(high_water_mark_u8_to_trilobyte((val >> 6) as u8));
         let group = TriloByte::from(high_water_mark_u8_to_trilobyte((val >> 3) as u8));
@@ -33,7 +37,10 @@ impl PathPermissions {
 
     pub fn from_string_octal(repr: &str) -> Result<PathPermissions, crate::Error> {
         let val = u32::from_str_radix(repr, 8).map_err(|error| {
-            crate::Error::FileSystemError(format!("cannot parse u32 from {} base 8: {}", repr, error))
+            crate::Error::FileSystemError(format!(
+                "cannot parse u32 from {} base 8: {}",
+                repr, error
+            ))
         })?;
         Ok(PathPermissions::from_u32(val)?)
     }
@@ -49,7 +56,11 @@ impl std::fmt::Debug for PathPermissions {
         write!(f, "PathPermissions[{}]", self.to_string_octal())
     }
 }
-
+impl Into<u32> for PathPermissions {
+    fn into(self) -> u32 {
+        self.into_u32()
+    }
+}
 #[cfg(test)]
 mod tests {
     use trilobyte::TriloByte;
@@ -92,6 +103,20 @@ mod tests {
     fn test_parse_permissions_from_string_octal_error() {
         let result = PathPermissions::from_string_octal("909");
         assert_eq!(result.is_err(), true);
-        assert_eq!(result, Err(crate::Error::FileSystemError(format!("cannot parse u32 from 909 base 8: invalid digit found in string"))));
+        assert_eq!(
+            result,
+            Err(crate::Error::FileSystemError(format!(
+                "cannot parse u32 from 909 base 8: invalid digit found in string"
+            )))
+        );
+    }
+    #[test]
+    fn test_permissions_into_u32() {
+        let permissions = PathPermissions {
+            user: TriloByte::from(7),
+            group: TriloByte::from(5),
+            others: TriloByte::from(4),
+        };
+        assert_eq!(permissions.into_u32(), 0o754);
     }
 }

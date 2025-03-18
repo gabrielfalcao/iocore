@@ -13,10 +13,10 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
 use std::fmt::{Debug, Display};
-use std::fs::{File, Permissions};
+use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::MAIN_SEPARATOR_STR;
 use std::process::Stdio;
 use std::str::FromStr;
@@ -491,12 +491,24 @@ impl Path {
         }
     }
 
-    pub fn permissions(&self) -> Permissions {
-        self.node().permissions()
+    pub fn check_permissions(&self) -> Result<PathPermissions, Error> {
+        let metadata = std::fs::metadata(self.path()).map_err(|error| {
+            let io_error = Error::IOError(error.kind()).to_string();
+            Error::FileSystemError(format!(
+                "error checking permissions of {:#?}: {}",
+                self.to_string(),
+                io_error
+            ))
+        })?;
+        Ok(PathPermissions::from_u32(metadata.mode())?)
+    }
+
+    pub fn permissions(&self) -> PathPermissions {
+        self.check_permissions().unwrap()
     }
 
     pub fn mode(&self) -> u32 {
-        self.permissions().mode()
+        self.permissions().into_u32()
     }
 
     pub fn owner_executable(&self) -> bool {
