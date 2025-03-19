@@ -919,19 +919,22 @@ impl Path {
         Ok(paths)
     }
 
-    pub fn set_access_time(&mut self, new_access_time: &PathDateTime) -> Result<(), Error> {
+    pub fn set_access_time(&mut self, new_access_time: &PathDateTime) -> Result<Path, Error> {
         let mut timestamps = self.timestamps()?;
-        Ok(timestamps.set_access_time(new_access_time)?)
+        timestamps.set_access_time(new_access_time)?;
+        Ok(self.clone())
     }
 
-    pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<(), Error> {
+    pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<Path, Error> {
         let mut timestamps = self.timestamps()?;
-        Ok(timestamps.set_modified_time(new_modified_time)?)
+        timestamps.set_modified_time(new_modified_time)?;
+        Ok(self.clone())
     }
 
-    pub fn set_created_time(&mut self, new_created_time: &PathDateTime) -> Result<(), Error> {
+    pub fn set_created_time(&mut self, new_created_time: &PathDateTime) -> Result<Path, Error> {
         let mut timestamps = self.timestamps()?;
-        Ok(timestamps.set_created_time(new_created_time)?)
+        timestamps.set_created_time(new_created_time)?;
+        Ok(self.clone())
     }
 }
 impl Path {
