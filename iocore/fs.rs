@@ -38,6 +38,21 @@ use crate::{FileSystemError, PathStatus, PathTimestamps, PathType};
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 
+/// `Path` is a data structure representing a path in unix filesystems
+/// that has practical methods for otherwise boring tasks, for
+/// instance, [`write`] writes bytes to a file, flushes bytes and
+/// syncs OS-internal data to the file-system, and if necessary,
+/// creates parents directories.
+///
+/// Example:
+///
+/// ```
+/// use iocore::Path;
+/// assert_eq!(
+///     Path::cwd().relative_to(&Path::new("tests/doctest-path")).to_string(),
+///     "tests/doctest-path"
+/// );
+/// ```
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Path {
     inner: String,
@@ -298,6 +313,16 @@ impl Path {
         }
     }
 
+    /// `write` writes bytes to file under path, truncates existing
+    /// files, creates parent directories if necessary
+    ///
+    /// Example
+    ///
+    /// ```
+    /// use iocore::Path;
+    /// Path::new("tests/doctest-example").write(b"test").unwrap();
+    /// assert_eq!(Path::raw("tests/doctest-example").read().unwrap(), "test");
+    /// ```
     pub fn write(&self, contents: &[u8]) -> Result<Path, Error> {
         self.makedirs()?;
         let mut file = self.open(OpenOptions::new().write(true).create(true)).map_err(|e| {
