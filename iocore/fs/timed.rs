@@ -5,6 +5,7 @@ use std::time::SystemTime;
 
 use chrono::format::SecondsFormat;
 use chrono::{DateTime, FixedOffset, Local, NaiveDateTime, Utc};
+use filetime::FileTime;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::Error;
@@ -120,6 +121,10 @@ impl PathDateTime {
         self.t.with_timezone(&Utc)
     }
 
+    pub fn timestamp(&self) -> (i64, u32) {
+        (self.t.timestamp(), self.t.timestamp_subsec_nanos())
+    }
+
     pub fn to_array(&self) -> [u16; 6] {
         [
             u16::from_str(&self.utc_datetime().format("%Y").to_string()).unwrap(),
@@ -137,6 +142,10 @@ impl PathDateTime {
             bytes.extend(data.to_be_bytes())
         }
         bytes
+    }
+
+    pub fn filetime(&self) -> FileTime {
+        FileTime::from_unix_time(self.t.timestamp(), self.t.timestamp_subsec_nanos())
     }
 }
 impl std::cmp::PartialEq for PathDateTime {
@@ -345,6 +354,22 @@ mod tests {
             assert_eq!(
                 PathDateTime::from_datetime_utc(&datetime).utc_datetime().to_string(),
                 "2025-03-19 01:12:43 UTC"
+            );
+        }
+    }
+    #[test]
+    fn test_timestamp() {
+        let datetime = DateTime::from_timestamp(1742346763, 123456789).unwrap();
+
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).timestamp(),
+                (1742346763, 123456789),
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).timestamp(),
+                (1742346763, 123456789),
             );
         }
     }

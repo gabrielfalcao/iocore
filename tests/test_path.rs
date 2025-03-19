@@ -2,7 +2,7 @@ use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
-use iocore::{Error, Path, PathPermissions, PathStatus, PathType, User};
+use iocore::{Error, Path, PathPermissions, PathStatus, PathType, User, PathDateTime};
 use iocore_test::{folder_path, path_to_test_file};
 use trilobyte::TriloByte;
 
@@ -312,9 +312,13 @@ fn test_path_permissions() {
 
 #[test]
 fn test_path_timestamps() {
-    let file_mode_640 = folder_path!().join("test_mode_640.file");
-
+    let mut file_mode_640 = folder_path!().join("test_mode_640.file");
+    let created_path_datetime = PathDateTime::parse_from_str("2025-03-18T06:28:30.007453605Z", "%Y-%m-%dT%H:%M:%S.%fZ").unwrap();
+    let modified_path_datetime = PathDateTime::parse_from_str("2025-03-18T23:49:43.445802000Z", "%Y-%m-%dT%H:%M:%S.%fZ").unwrap();
+    file_mode_640.set_created_time(&created_path_datetime);
+    file_mode_640.set_modified_time(&modified_path_datetime);
     let timestamps = file_mode_640.timestamps().unwrap();
+
 
     assert_eq!(&timestamps.path, &file_mode_640);
     if std::env::var("TZ").unwrap_or_default() == "UTC" {

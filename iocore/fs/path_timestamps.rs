@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
 use crate::fs::timed::PathDateTime;
-use crate::Path;
+use crate::{path_datetime_from_metadata_field, Path};
 /// `PathTimestamps`
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct PathTimestamps {
@@ -15,36 +15,9 @@ pub struct PathTimestamps {
 impl PathTimestamps {
     pub fn from_path(path: &Path, metadata: &std::fs::Metadata) -> Result<PathTimestamps, Error> {
         let path = path.clone();
-        let accessed: PathDateTime =
-            Into::<PathDateTime>::into(metadata.accessed().map_err(|error| {
-                let io_error = Error::IOError(error.kind()).to_string();
-                Error::FileSystemError(format!(
-                    "error obtaining access time from metadata {:#?} of path {:#?}: {}",
-                    &metadata,
-                    path.to_string(),
-                    io_error
-                ))
-            })?);
-        let modified: PathDateTime =
-            Into::<PathDateTime>::into(metadata.modified().map_err(|error| {
-                let io_error = Error::IOError(error.kind()).to_string();
-                Error::FileSystemError(format!(
-                    "error obtaining access time from metadata {:#?} of path {:#?}: {}",
-                    &metadata,
-                    path.to_string(),
-                    io_error
-                ))
-            })?);
-        let created: PathDateTime =
-            Into::<PathDateTime>::into(metadata.created().map_err(|error| {
-                let io_error = Error::IOError(error.kind()).to_string();
-                Error::FileSystemError(format!(
-                    "error obtaining access time from metadata {:#?} of path {:#?}: {}",
-                    &metadata,
-                    path.to_string(),
-                    io_error
-                ))
-            })?);
+        let accessed: PathDateTime = path_datetime_from_metadata_field!(accessed, metadata, path);
+        let modified: PathDateTime = path_datetime_from_metadata_field!(modified, metadata, path);
+        let created: PathDateTime = path_datetime_from_metadata_field!(created, metadata, path);
 
         Ok(PathTimestamps {
             path,
@@ -60,6 +33,36 @@ impl PathTimestamps {
             ("modified", self.modified.clone()),
             ("created", self.created.clone()),
         ]
+    }
+    pub fn set_access_time(&mut self, new_access_time: &PathDateTime) -> Result<(), Error> {
+        filetime::set_file_atime(self.path.path(), new_access_time.filetime()).map_err(|error| {
+            Error::FileSystemError(format!("error setting access time of path {:#?} to {:#?}: {}",
+                                           self.path.to_string(),
+                                           new_access_time.to_string(),
+                                           error))
+        })?;
+        self.accessed = new_access_time.clone();
+        Ok(())
+    }
+    pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<(), Error> {
+        filetime::set_file_mtime(self.path.path(), new_modified_time.filetime()).map_err(|error| {
+            Error::FileSystemError(format!("error setting modified time of path {:#?} to {:#?}: {}",
+                                           self.path.to_string(),
+                                           new_modified_time.to_string(),
+                                           error))
+        })?;
+        self.modified = new_modified_time.clone();
+        Ok(())
+    }
+    pub fn set_created_time(&mut self, new_created_time: &PathDateTime) -> Result<(), Error> {
+        filetime::set_file_mtime(self.path.path(), new_created_time.filetime()).map_err(|error| {
+            Error::FileSystemError(format!("error setting created time of path {:#?} to {:#?}: {}",
+                                           self.path.to_string(),
+                                           new_created_time.to_string(),
+                                           error))
+        })?;
+        self.created = new_created_time.clone();
+        Ok(())
     }
 }
 
@@ -92,15 +95,14 @@ impl std::fmt::Debug for PathTimestamps {
 #[macro_export]
 macro_rules! path_datetime_from_metadata_field {
     ($field:ident, $metadata:ident, $path:ident $(,)?) => {
-        $crate::fs::timed::PathDateTime =
-            Into::<$crate::fs::timed::PathDateTime>::into(metadata.$field().map_err(|error| {
-                let io_error = Error::IOError(error.kind()).to_string();
-                Error::FileSystemError(format!(
-                    "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
-                    &$metadata,
-                    $path.to_string(),
-                    io_error
-                ))
-            })?);
+        Into::<$crate::fs::timed::PathDateTime>::into($metadata.$field().map_err(|error| {
+            let io_error = Error::IOError(error.kind()).to_string();
+            Error::FileSystemError(format!(
+                "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
+                $metadata,
+                $path.to_string(),
+                io_error
+            ))
+        })?)
     };
 }
