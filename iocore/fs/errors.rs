@@ -1,4 +1,5 @@
 use crate::io::error::Code;
+use crate::Path;
 
 #[derive(Copy, Clone)]
 pub enum FileSystemError {
@@ -132,29 +133,29 @@ impl std::fmt::Debug for FileSystemError {
 
 #[derive(Debug, Clone)]
 pub enum FileSystemException {
-    PathDoesNotExist(crate::fs::Path, String),
-    PathIsNotSymlink(crate::fs::Path, String),
-    CreateFileError(crate::fs::Path, String),
-    CreateSymlinkError(crate::fs::Path, String),
-    NoAncestorPathError(crate::fs::Path, String),
-    OpenFileError(crate::fs::Path, String),
-    AppendFileError(crate::fs::Path, String),
-    NonWritablePathError(crate::fs::Path, String),
-    NonReadablePathError(crate::fs::Path, String),
-    NonExecutablePathError(crate::fs::Path, String),
-    WriteFileError(crate::fs::Path, String),
-    WriteFlushError(crate::fs::Path, String),
-    SetModeError(crate::fs::Path, String),
-    MoveFileError(crate::fs::Path, String),
-    ReadFileError(crate::fs::Path, String),
-    DeleteFileError(crate::fs::Path, String),
-    DeleteDirectoryError(crate::fs::Path, String),
-    UnexpectedPathType(crate::fs::Path, String),
-    AbsolutePathError(crate::fs::Path, String),
-    CanonicalPathError(crate::fs::Path, String),
-    ReadSymlinkError(crate::fs::Path, String),
-    CreateDirectoryError(crate::fs::Path, String),
-    UnsafeFileContentError(crate::fs::Path, String),
+    PathDoesNotExist(Path, String),
+    PathIsNotSymlink(Path, String),
+    CreateFileError(Path, String),
+    CreateSymlinkError(Path, String),
+    NoAncestorPathError(Path, String),
+    OpenFileError(Path, String),
+    AppendFileError(Path, String),
+    NonWritablePathError(Path, String),
+    NonReadablePathError(Path, String),
+    NonExecutablePathError(Path, String),
+    WriteFileError(Path, String),
+    WriteFlushError(Path, String),
+    SetModeError(Path, String),
+    MoveFileError(Path, String),
+    ReadFileError(Path, String),
+    DeleteFileError(Path, String),
+    DeleteDirectoryError(Path, String),
+    UnexpectedPathType(Path, String),
+    AbsolutePathError(Path, String),
+    CanonicalPathError(Path, String),
+    ReadSymlinkError(Path, String),
+    CreateDirectoryError(Path, String),
+    UnsafeFileContentError(Path, String),
 }
 impl FileSystemException {
     fn error(&self) -> FileSystemError {
@@ -186,8 +187,8 @@ impl FileSystemException {
     }
 }
 
-impl From<(FileSystemError, crate::Path, String)> for FileSystemException {
-    fn from(fp: (FileSystemError, crate::Path, String)) -> FileSystemException {
+impl From<(FileSystemError, Path, String)> for FileSystemException {
+    fn from(fp: (FileSystemError, Path, String)) -> FileSystemException {
         let (error, path, e) = fp;
         let error_description = format!("{} error on {:#?}: {}", error, path, e);
         match error {
@@ -240,8 +241,8 @@ impl From<(FileSystemError, crate::Path, String)> for FileSystemException {
     }
 }
 
-impl From<(FileSystemError, crate::Path)> for FileSystemException {
-    fn from(fp: (FileSystemError, crate::Path)) -> FileSystemException {
+impl From<(FileSystemError, Path)> for FileSystemException {
+    fn from(fp: (FileSystemError, Path)) -> FileSystemException {
         let (error, path) = fp;
         let error_description = format!("{} error on {:#?}", error, path);
         match error {

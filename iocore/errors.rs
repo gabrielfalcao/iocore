@@ -1,3 +1,4 @@
+use crate::{FileSystemError, FileSystemException};
 #[derive(Debug, Clone)]
 pub enum Error {
     IOError(std::io::ErrorKind),
@@ -22,6 +23,7 @@ pub enum Error {
     MalformedFileName(String),
     ThreadGroupError(String),
     ShellCommandError(String),
+    ParseError(String),
 }
 
 impl std::fmt::Display for Error {
@@ -55,6 +57,7 @@ impl std::fmt::Display for Error {
             Error::MalformedFileName(e) => write!(f, "MalformedFileName: {}", e),
             Error::ThreadGroupError(e) => write!(f, "ThreadGroupError: {}", e),
             Error::ShellCommandError(e) => write!(f, "ShellCommandError: {}", e),
+            Error::ParseError(e) => write!(f, "ParseError: {}", e),
         }
     }
 }
@@ -66,51 +69,51 @@ impl From<std::io::Error> for Error {
         Error::IOError(e.kind())
     }
 }
-impl From<crate::fs::FileSystemException> for Error {
-    fn from(e: crate::fs::FileSystemException) -> Self {
+impl From<FileSystemException> for Error {
+    fn from(e: FileSystemException) -> Self {
         Error::FileSystemError(format!("{}", e))
     }
 }
 
-impl From<(crate::fs::FileSystemError, crate::Path, String)> for Error {
-    fn from(t3: (crate::fs::FileSystemError, crate::Path, String)) -> Error {
-        let exc: crate::fs::FileSystemException = t3.into();
+impl From<(FileSystemError, crate::Path, String)> for Error {
+    fn from(t3: (FileSystemError, crate::Path, String)) -> Error {
+        let exc: FileSystemException = t3.into();
         exc.into()
     }
 }
-impl From<(crate::fs::FileSystemError, &crate::Path, String)> for Error {
-    fn from(t3: (crate::fs::FileSystemError, &crate::Path, String)) -> Error {
+impl From<(FileSystemError, &crate::Path, String)> for Error {
+    fn from(t3: (FileSystemError, &crate::Path, String)) -> Error {
         let (e, p, s) = t3;
-        let exc: crate::fs::FileSystemException = (e, p.clone(), s).into();
+        let exc: FileSystemException = (e, p.clone(), s).into();
         exc.into()
     }
 }
-impl From<(crate::fs::FileSystemError, crate::Path, &str)> for Error {
-    fn from(t3: (crate::fs::FileSystemError, crate::Path, &str)) -> Error {
+impl From<(FileSystemError, crate::Path, &str)> for Error {
+    fn from(t3: (FileSystemError, crate::Path, &str)) -> Error {
         let (e, p, s) = t3;
-        let exc: crate::fs::FileSystemException = (e, p, s.to_string()).into();
+        let exc: FileSystemException = (e, p, s.to_string()).into();
         exc.into()
     }
 }
-impl From<(crate::fs::FileSystemError, &crate::Path, &str)> for Error {
-    fn from(t3: (crate::fs::FileSystemError, &crate::Path, &str)) -> Error {
+impl From<(FileSystemError, &crate::Path, &str)> for Error {
+    fn from(t3: (FileSystemError, &crate::Path, &str)) -> Error {
         let (e, p, s) = t3;
-        let exc: crate::fs::FileSystemException = (e, p.clone(), s.to_string()).into();
+        let exc: FileSystemException = (e, p.clone(), s.to_string()).into();
         exc.into()
     }
 }
 
-impl From<(crate::fs::FileSystemError, &crate::Path)> for Error {
-    fn from(t2: (crate::fs::FileSystemError, &crate::Path)) -> Error {
+impl From<(FileSystemError, &crate::Path)> for Error {
+    fn from(t2: (FileSystemError, &crate::Path)) -> Error {
         let (e, p) = t2;
-        let exc: crate::fs::FileSystemException = (e, p.clone()).into();
+        let exc: FileSystemException = (e, p.clone()).into();
         exc.into()
     }
 }
-impl From<(crate::fs::FileSystemError, crate::Path)> for Error {
-    fn from(t3: (crate::fs::FileSystemError, crate::Path)) -> Error {
+impl From<(FileSystemError, crate::Path)> for Error {
+    fn from(t3: (FileSystemError, crate::Path)) -> Error {
         let (e, p) = t3;
-        let exc: crate::fs::FileSystemException = (e, p).into();
+        let exc: FileSystemException = (e, p).into();
         exc.into()
     }
 }

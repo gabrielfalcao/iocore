@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 use iocore::coreio::absolute_path;
 use iocore::errors::Error;
-use iocore::fs::*;
-use iocore::walk::*;
+use iocore::{walk_nodes, NoopProgressHandler, Path};
 
 #[test]
 fn test_walk_nodes_glob() -> Result<(), Error> {
@@ -13,7 +12,16 @@ fn test_walk_nodes_glob() -> Result<(), Error> {
             .iter()
             .map(|entry| entry.node().filename())
             .collect::<Vec<String>>(),
-        vec!["coreio.rs", "errors.rs", "walk.rs", "env.rs", "lib.rs", "sys.rs", "fs.rs", "sh.rs"]
+        vec![
+            "coreio.rs",
+            "errors.rs",
+            "walk.rs",
+            "env.rs",
+            "lib.rs",
+            "sys.rs",
+            "fs.rs",
+            "sh.rs"
+        ]
     );
     Ok(())
 }

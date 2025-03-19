@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use crate::fs::Size;
+use crate::Size;
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Info {

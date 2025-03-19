@@ -3,6 +3,7 @@ pub mod ls_node_type;
 pub mod node;
 pub mod opts;
 pub mod path_status;
+pub mod path_timestamps;
 pub mod path_type;
 pub mod path_utils;
 pub mod perms;
@@ -22,20 +23,16 @@ use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
 
-pub use errors::*;
-pub use ls_node_type::*;
-pub use node::*;
-pub use opts::*;
-pub use path_status::*;
-pub use path_type::*;
-pub use path_utils::*;
-pub use perms::PathPermissions;
+use node::Node;
+use opts::OpenOptions;
+use path_utils::*;
+use perms::PathPermissions;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
-pub use size::*;
-pub use timed::*;
+use size::Size;
 
 use crate::errors::Error;
+use crate::{FileSystemError, PathStatus, PathTimestamps, PathType};
 
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
@@ -492,12 +489,11 @@ impl Path {
     }
 
     pub fn check_permissions(&self) -> Result<PathPermissions, Error> {
-        let metadata = std::fs::metadata(self.path()).map_err(|error| {
-            let io_error = Error::IOError(error.kind()).to_string();
+        let metadata = self.path_metadata().map_err(|error| {
             Error::FileSystemError(format!(
                 "error checking permissions of {:#?}: {}",
                 self.to_string(),
-                io_error
+                error
             ))
         })?;
         Ok(PathPermissions::from_u32(metadata.mode())?)
@@ -567,6 +563,17 @@ impl Path {
         let mut p = meta.permissions();
         p.set_mode(mode);
         Ok(path)
+    }
+
+    pub fn timestamps(&self) -> Result<PathTimestamps, Error> {
+        let metadata = self.path_metadata().map_err(|error| {
+            Error::FileSystemError(format!(
+                "error getting timestamps of {:#?}: {}",
+                self.to_string(),
+                error
+            ))
+        })?;
+        Ok(PathTimestamps::from_path(self, &metadata)?)
     }
 
     pub fn is_dir(&self) -> bool {
@@ -911,7 +918,18 @@ impl Path {
         Ok(paths)
     }
 }
-
+impl Path {
+    fn path_metadata(&self) -> Result<std::fs::Metadata, Error> {
+        Ok(std::fs::metadata(self.path()).map_err(|error| {
+            let io_error = Error::IOError(error.kind()).to_string();
+            Error::FileSystemError(format!(
+                "error obtaining metadata of of {:#?}: {}",
+                self.to_string(),
+                io_error
+            ))
+        })?)
+    }
+}
 impl PartialEq for Path {
     fn eq(&self, other: &Self) -> bool {
         self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()

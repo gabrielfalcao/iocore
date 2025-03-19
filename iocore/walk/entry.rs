@@ -4,8 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use crate::fs::{Node, Path, PathType, Size};
-use crate::walk::Info;
+use crate::{Info, Node, Path, PathType, Size};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Entry {

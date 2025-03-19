@@ -307,8 +307,37 @@ fn test_path_permissions() {
         file_mode_640.permissions(),
         PathPermissions::from_u32(metadata.mode()).unwrap()
     );
-    assert_eq!(
-        file_mode_640.mode(),
-        0o640,
-    );
+    assert_eq!(file_mode_640.mode(), 0o640,);
+}
+
+#[test]
+fn test_path_timestamps() {
+    let file_mode_640 = folder_path!().join("test_mode_640.file");
+
+    let timestamps = file_mode_640.timestamps().unwrap();
+
+    assert_eq!(&timestamps.path, &file_mode_640);
+    if std::env::var("TZ").unwrap_or_default() == "UTC" {
+        assert_eq!(format!("{}", timestamps.created), "2025-03-18T06:28:30.007453605Z");
+        assert_eq!(format!("{}", timestamps.modified), "2025-03-18T23:49:43.445802000Z");
+        assert_eq!(
+            format!("{:#?}", timestamps.created),
+            "PathDateTime[2025-03-18T06:28:30.007453605Z]"
+        );
+        assert_eq!(
+            format!("{:#?}", timestamps.modified),
+            "PathDateTime[2025-03-18T23:49:43.445802000Z]"
+        );
+    } else {
+        assert_eq!(format!("{}", timestamps.created), "2025-03-18T03:28:30.007453605-03:00");
+        assert_eq!(format!("{}", timestamps.modified), "2025-03-18T20:49:43.445802000-03:00");
+        assert_eq!(
+            format!("{:#?}", timestamps.created),
+            "PathDateTime[2025-03-18T03:28:30.007453605-03:00]"
+        );
+        assert_eq!(
+            format!("{:#?}", timestamps.modified),
+            "PathDateTime[2025-03-18T20:49:43.445802000-03:00]"
+        );
+    }
 }
