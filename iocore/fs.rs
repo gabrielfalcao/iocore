@@ -304,26 +304,19 @@ impl Path {
             (FileSystemError::OpenFile, self, format!("Path::write():{} {}", line!(), e))
         })?;
         file.set_len(0)?;
-        let len = contents.len();
-        match file.write_all(contents) {
-            Ok(_) => match file.flush() {
-                Ok(_) => {},
-                Err(e) =>
-                    return Err((
-                        FileSystemError::WriteFlush,
-                        self.clone(),
-                        format!("Path::write():{} {}", line!(), e),
-                    )
-                        .into()),
-            },
-            Err(e) =>
-                return Err((
-                    FileSystemError::WriteFile,
-                    self.clone(),
-                    format!("Path::write():{} {} {}", line!(), len, e),
-                )
-                    .into()),
-        };
+        file.write_all(contents).map_err(|error| {
+            Error::FileSystemError(format!("writing bytes to {:#?}: {}", self.to_string(), error))
+        })?;
+        file.flush().map_err(|error| {
+            Error::FileSystemError(format!("flushing bytes to {:#?}: {}", self.to_string(), error))
+        })?;
+        file.sync_all().map_err(|error| {
+            Error::FileSystemError(format!(
+                "syncing all OS-internal file content to {:#?}: {}",
+                self.to_string(),
+                error
+            ))
+        })?;
         Ok(self.clone())
     }
 
@@ -558,11 +551,23 @@ impl Path {
 
     pub fn set_mode(&mut self, mode: u32) -> Result<Path, Error> {
         let path = self.clone();
-        let meta = std::fs::metadata(&self).map_err(|e| {
-            (FileSystemError::SetMode, &path, format!("Path::set_mode():{} {}", line!(), e))
+        let meta = std::fs::metadata(self.path()).map_err(|error| {
+            Error::FileSystemError(format!(
+                "obtaining metadata of {:#?}: {}",
+                self.to_string(),
+                error
+            ))
         })?;
-        let mut p = meta.permissions();
-        p.set_mode(mode);
+        let mut permissions = meta.permissions();
+        permissions.set_mode(mode);
+        std::fs::set_permissions(self.path(), permissions).map_err(|error| {
+            Error::FileSystemError(format!(
+                "setting permissions {:o} of {:#?}: {}",
+                mode,
+                self.to_string(),
+                error
+            ))
+        })?;
         Ok(path)
     }
 
@@ -928,12 +933,6 @@ impl Path {
     pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<Path, Error> {
         let mut timestamps = self.timestamps()?;
         timestamps.set_modified_time(new_modified_time)?;
-        Ok(self.clone())
-    }
-
-    pub fn set_created_time(&mut self, new_created_time: &PathDateTime) -> Result<Path, Error> {
-        let mut timestamps = self.timestamps()?;
-        timestamps.set_created_time(new_created_time)?;
         Ok(self.clone())
     }
 }

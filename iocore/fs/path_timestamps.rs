@@ -34,34 +34,34 @@ impl PathTimestamps {
             ("created", self.created.clone()),
         ]
     }
+
     pub fn set_access_time(&mut self, new_access_time: &PathDateTime) -> Result<(), Error> {
-        filetime::set_file_atime(self.path.path(), new_access_time.filetime()).map_err(|error| {
-            Error::FileSystemError(format!("error setting access time of path {:#?} to {:#?}: {}",
-                                           self.path.to_string(),
-                                           new_access_time.to_string(),
-                                           error))
-        })?;
+        filetime::set_file_atime(self.path.path(), new_access_time.filetime()).map_err(
+            |error| {
+                Error::FileSystemError(format!(
+                    "error setting access time of path {:#?} to {:#?}: {}",
+                    self.path.to_string(),
+                    new_access_time.to_string(),
+                    error
+                ))
+            },
+        )?;
         self.accessed = new_access_time.clone();
         Ok(())
     }
+
     pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<(), Error> {
-        filetime::set_file_mtime(self.path.path(), new_modified_time.filetime()).map_err(|error| {
-            Error::FileSystemError(format!("error setting modified time of path {:#?} to {:#?}: {}",
-                                           self.path.to_string(),
-                                           new_modified_time.to_string(),
-                                           error))
-        })?;
+        filetime::set_file_mtime(self.path.path(), new_modified_time.filetime()).map_err(
+            |error| {
+                Error::FileSystemError(format!(
+                    "error setting modified time of path {:#?} to {:#?}: {}",
+                    self.path.to_string(),
+                    new_modified_time.to_string(),
+                    error
+                ))
+            },
+        )?;
         self.modified = new_modified_time.clone();
-        Ok(())
-    }
-    pub fn set_created_time(&mut self, new_created_time: &PathDateTime) -> Result<(), Error> {
-        filetime::set_file_mtime(self.path.path(), new_created_time.filetime()).map_err(|error| {
-            Error::FileSystemError(format!("error setting created time of path {:#?} to {:#?}: {}",
-                                           self.path.to_string(),
-                                           new_created_time.to_string(),
-                                           error))
-        })?;
-        self.created = new_created_time.clone();
         Ok(())
     }
 }

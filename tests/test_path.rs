@@ -2,7 +2,7 @@ use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
-use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, User};
+use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result, User};
 use iocore_test::{folder_path, path_to_test_file};
 use trilobyte::TriloByte;
 
@@ -289,67 +289,48 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_
 }
 
 #[test]
-fn test_path_permissions() {
-    let file_mode_640 = folder_path!().join("test_mode_640.file").set_mode(0o640).unwrap();
-    let metadata = std::fs::metadata(file_mode_640.path()).unwrap();
+fn test_path_permissions() -> Result<()> {
+    let file_mode_640 = path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
+    let metadata = std::fs::metadata(file_mode_640.path())?;
 
-    assert_eq!(metadata.mode(), 0o100640);
-
+    assert_eq!(format!("{:o}", metadata.mode()), "100640");
     assert_eq!(
-        PathPermissions::from_u32(metadata.mode()).unwrap(),
+        PathPermissions::from_u32(metadata.mode())?,
         PathPermissions {
             user: TriloByte::from(0b0110),
             group: TriloByte::from(0b100),
             others: TriloByte::from(0b00),
         }
     );
-    assert_eq!(
-        file_mode_640.permissions(),
-        PathPermissions::from_u32(metadata.mode()).unwrap()
-    );
-    assert_eq!(file_mode_640.mode(), 0o640,);
+
+    assert_eq!(file_mode_640.mode(), 0o640);
+    assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
+    Ok(())
 }
 
 #[test]
-fn test_path_timestamps() {
-    let created_path_datetime =
-        PathDateTime::parse_from_str("2025-03-18T06:28:30.007453605Z", "%Y-%m-%dT%H:%M:%S.%fZ")
-            .unwrap();
+fn test_path_timestamps() -> Result<()> {
     let modified_path_datetime =
-        PathDateTime::parse_from_str("2025-03-18T23:49:43.445802000Z", "%Y-%m-%dT%H:%M:%S.%fZ")
-            .unwrap();
-    let file_mode_640 = folder_path!()
-        .join("test_mode_640.file")
-        .set_mode(0o640)
-        .unwrap()
-        .set_created_time(&created_path_datetime)
-        .unwrap()
-        .set_modified_time(&modified_path_datetime)
-        .unwrap();
-    let timestamps = file_mode_640.timestamps().unwrap();
+        PathDateTime::parse_from_str("2025-03-18T23:49:43.445802000Z", "%Y-%m-%dT%H:%M:%S.%fZ")?;
+    let file_mode_640 = path_to_test_file!("test_path_timestamps.640")
+        .write(&[])?
+        .set_mode(0o640)?
+        .set_modified_time(&modified_path_datetime)?;
+    let timestamps = file_mode_640.timestamps()?;
 
     assert_eq!(&timestamps.path, &file_mode_640);
     if std::env::var("TZ").unwrap_or_default() == "UTC" {
-        assert_eq!(format!("{}", timestamps.created), "2025-03-18T06:28:30.007453605Z");
         assert_eq!(format!("{}", timestamps.modified), "2025-03-18T23:49:43.445802000Z");
-        assert_eq!(
-            format!("{:#?}", timestamps.created),
-            "PathDateTime[2025-03-18T06:28:30.007453605Z]"
-        );
         assert_eq!(
             format!("{:#?}", timestamps.modified),
             "PathDateTime[2025-03-18T23:49:43.445802000Z]"
         );
     } else {
-        assert_eq!(format!("{}", timestamps.created), "2025-03-18T03:28:30.007453605-03:00");
         assert_eq!(format!("{}", timestamps.modified), "2025-03-18T20:49:43.445802000-03:00");
-        assert_eq!(
-            format!("{:#?}", timestamps.created),
-            "PathDateTime[2025-03-18T03:28:30.007453605-03:00]"
-        );
         assert_eq!(
             format!("{:#?}", timestamps.modified),
             "PathDateTime[2025-03-18T20:49:43.445802000-03:00]"
         );
     }
+    Ok(())
 }
