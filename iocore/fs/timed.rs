@@ -3,8 +3,11 @@ use std::str::FromStr;
 use std::string::ToString;
 use std::time::SystemTime;
 
-use chrono::{DateTime, Local};
+use chrono::format::SecondsFormat;
+use chrono::{DateTime, FixedOffset, Local, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::Error;
 
 #[derive(Clone)]
 pub struct PathDateTime {
@@ -19,13 +22,13 @@ impl From<SystemTime> for PathDateTime {
 
 impl Display for PathDateTime {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.human_friendly(None))
+        write!(f, "{}", self.to_rfc3339())
     }
 }
 
 impl std::fmt::Debug for PathDateTime {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:#?}", &self.t)
+        write!(f, "PathDateTime[{}]", self.to_rfc3339())
     }
 }
 
@@ -71,63 +74,278 @@ impl PathDateTime {
         .to_string();
         self.t.format(fmt.as_str()).to_string()
     }
-}
 
-impl PathDateTime {
-    pub fn year(&self) -> u16 {
-        u16::from_str(&self.t.format("%Y").to_string()).unwrap()
+    pub fn to_rfc3339(&self) -> String {
+        self.t.to_rfc3339_opts(SecondsFormat::Nanos, true)
     }
 
-    pub fn month(&self) -> u16 {
-        u16::from_str(&self.t.format("%m").to_string()).unwrap()
+    pub fn from_datetime_utc(datetime: &DateTime<Utc>) -> PathDateTime {
+        PathDateTime::from_datetime(&datetime.with_timezone(&Local))
     }
 
-    pub fn day(&self) -> u16 {
-        u16::from_str(&self.t.format("%d").to_string()).unwrap()
+    pub fn from_datetime_fixed_offset(datetime: &DateTime<FixedOffset>) -> PathDateTime {
+        PathDateTime::from_datetime(&datetime.with_timezone(&Local))
     }
 
-    pub fn hours(&self) -> u16 {
-        u16::from_str(&self.t.format("%H").to_string()).unwrap()
+    pub fn from_datetime(t: &DateTime<Local>) -> PathDateTime {
+        let t = t.clone();
+        PathDateTime { t }
     }
 
-    pub fn minutes(&self) -> u16 {
-        u16::from_str(&self.t.format("%H").to_string()).unwrap()
+    pub fn from_timestamp(secs: i64, nsecs: u32) -> PathDateTime {
+        PathDateTime::from_datetime_utc(
+            &DateTime::from_timestamp(secs, nsecs)
+                .expect(&format!("chrono::DateTime<Utc> from {} secs and {} nsecs", secs, nsecs)),
+        )
     }
 
-    pub fn seconds(&self) -> u16 {
-        u16::from_str(&self.t.format("%H").to_string()).unwrap()
+    pub fn parse_from_str(s: &str, fmt: &str) -> Result<PathDateTime, Error> {
+        Ok(PathDateTime::from_datetime_utc(
+            &NaiveDateTime::parse_from_str(s, fmt)
+                .map_err(|error| {
+                    Error::ParseError(format!(
+                        "error parsing '{}' with format '{}': {}",
+                        s, fmt, error
+                    ))
+                })?
+                .and_utc(),
+        ))
     }
 
-    pub fn to_usize<'a>(&self) -> [u16; 6] {
+    pub fn local_datetime(&self) -> DateTime<Local> {
+        self.t.with_timezone(&Local)
+    }
+
+    pub fn utc_datetime(&self) -> DateTime<Utc> {
+        self.t.with_timezone(&Utc)
+    }
+
+    pub fn to_array(&self) -> [u16; 6] {
         [
-            self.year(),
-            self.month(),
-            self.day(),
-            self.hours(),
-            self.minutes(),
-            self.seconds(),
+            u16::from_str(&self.utc_datetime().format("%Y").to_string()).unwrap(),
+            u16::from_str(&self.utc_datetime().format("%m").to_string()).unwrap(),
+            u16::from_str(&self.utc_datetime().format("%d").to_string()).unwrap(),
+            u16::from_str(&self.utc_datetime().format("%H").to_string()).unwrap(),
+            u16::from_str(&self.utc_datetime().format("%M").to_string()).unwrap(),
+            u16::from_str(&self.utc_datetime().format("%S").to_string()).unwrap(),
         ]
+    }
+
+    pub fn to_bytes<'a>(&self) -> Vec<u8> {
+        let mut bytes = Vec::<u8>::new();
+        for data in self.to_array() {
+            bytes.extend(data.to_be_bytes())
+        }
+        bytes
     }
 }
 impl std::cmp::PartialEq for PathDateTime {
     fn eq(&self, other: &Self) -> bool {
-        self.to_usize().eq(&other.to_usize())
+        self.utc_datetime().eq(&other.utc_datetime())
     }
 }
 impl std::cmp::Eq for PathDateTime {}
 impl std::cmp::PartialOrd for PathDateTime {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.to_usize().partial_cmp(&other.to_usize())
+        self.utc_datetime().partial_cmp(&other.utc_datetime())
     }
 }
 impl std::cmp::Ord for PathDateTime {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.to_usize().cmp(&other.to_usize())
+        self.utc_datetime().cmp(&other.utc_datetime())
     }
 }
 
 impl std::hash::Hash for PathDateTime {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.to_usize().hash(state);
+        self.utc_datetime().hash(state);
+        self.local_datetime().hash(state);
+        self.to_bytes().hash(state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{DateTime, FixedOffset, Local, NaiveDate, TimeZone};
+
+    use crate::PathDateTime;
+
+    #[test]
+    fn test_from_datetime_utc() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap();
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_from_datetime_fixedoffset() {
+        let datetime = FixedOffset::east_opt(0)
+            .unwrap()
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2025, 3, 19)
+                    .unwrap()
+                    .and_hms_nano_opt(1, 12, 43, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_fixed_offset(&datetime).to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_fixed_offset(&datetime).to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_from_datetime() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap().with_timezone(&Local);
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime(&datetime).to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime(&datetime).to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_from_timestamp() {
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_timestamp(1742346763, 0).to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_timestamp(1742346763, 0).to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_parse_from_str() {
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::parse_from_str("2025-03-19T01:12:43", "%Y-%m-%dT%H:%M:%S")
+                    .unwrap()
+                    .to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+            assert_eq!(
+                PathDateTime::parse_from_str("2025-03-19T01:12:43", "%Y-%m-%dT%H:%M:%S")
+                    .unwrap()
+                    .to_string(),
+                "2025-03-19T01:12:43.000000000Z"
+            );
+            assert_eq!(
+                PathDateTime::parse_from_str(
+                    "2025-03-19T01:12:43.123456789Z",
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+                .unwrap()
+                .to_string(),
+                "2025-03-19T01:12:43.123456789Z"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::parse_from_str("2025-03-19T01:12:43", "%Y-%m-%dT%H:%M:%S")
+                    .unwrap()
+                    .to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+
+            assert_eq!(
+                PathDateTime::parse_from_str("2025-03-19 01:12:43", "%Y-%m-%d %H:%M:%S")
+                    .unwrap()
+                    .to_string(),
+                "2025-03-18T22:12:43.000000000-03:00"
+            );
+            assert_eq!(
+                PathDateTime::parse_from_str(
+                    "2025-03-19T01:12:43.123456789Z",
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+                .unwrap()
+                .to_string(),
+                "2025-03-18T22:12:43.123456789-03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_to_array() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap();
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_array(),
+                [2025, 3, 19, 1, 12, 43]
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_array(),
+                [2025, 3, 19, 1, 12, 43]
+            );
+        }
+    }
+    #[test]
+    fn test_to_bytes() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap();
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_bytes(),
+                vec![7, 233, 0, 3, 0, 19, 0, 1, 0, 12, 0, 43],
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).to_bytes(),
+                vec![7, 233, 0, 3, 0, 19, 0, 1, 0, 12, 0, 43],
+            );
+        }
+    }
+    #[test]
+    fn test_local_datetime() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap();
+
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).local_datetime().to_string(),
+                "2025-03-19 01:12:43 +00:00"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).local_datetime().to_string(),
+                "2025-03-18 22:12:43 -03:00"
+            );
+        }
+    }
+    #[test]
+    fn test_utc_datetime() {
+        let datetime = DateTime::from_timestamp(1742346763, 0).unwrap();
+
+        if std::env::var("TZ").unwrap_or_default() == "UTC" {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).utc_datetime().to_string(),
+                "2025-03-19 01:12:43 UTC"
+            );
+        } else {
+            assert_eq!(
+                PathDateTime::from_datetime_utc(&datetime).utc_datetime().to_string(),
+                "2025-03-19 01:12:43 UTC"
+            );
+        }
     }
 }
