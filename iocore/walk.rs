@@ -2,14 +2,11 @@ pub mod entry;
 pub mod info;
 pub mod t;
 
-use entry::Entry;
-use info::Info;
-use t::{NoopProgressHandler, WalkProgressHandler};
 use thread_groups::ThreadGroup;
 
 use crate::errors::Error;
 use crate::fs::{cmp_paths_by_length, cmp_paths_by_parts};
-use crate::{Path, PathType, Size};
+use crate::{Entry, Info, NoopProgressHandler, Path, PathType, Size, WalkProgressHandler};
 
 pub fn read_dir(
     path: &Path,
