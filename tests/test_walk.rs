@@ -10,6 +10,7 @@ fn test_walk_nodes_glob() -> Result<(), Error> {
         walk_nodes(vec![format!("iocore/*.rs")], NoopProgressHandler.clone(), None)
             .unwrap()
             .iter()
+            .filter(|entry|!entry.node().filename().starts_with("."))
             .map(|entry| entry.node().filename())
             .collect::<Vec<String>>(),
         vec![

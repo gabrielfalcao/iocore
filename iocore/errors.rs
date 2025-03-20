@@ -1,12 +1,18 @@
 use crate::{FileSystemError, FileSystemException};
+
+
+/// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
 pub enum Error {
+    /// `Error::IOError` wraps [`std::io::Error`]
     IOError(std::io::ErrorKind),
+    /// `Error::FileSystemException` represents filesystem-related errors
     FileSystemError(String),
     MalformedGlobPattern(String),
     HomePathError(String),
     ReadDirError(String),
     SafetyError(String),
+    /// `Error::EnvironmentVarError` represents error while obtaining a environment variable
     EnvironmentVarError(String),
     IOCoreException(String),
     SubprocessError(String),

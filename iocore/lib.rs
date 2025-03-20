@@ -40,7 +40,7 @@ pub use coreio::{
     get_or_create_parent_dir, open_append, open_read, read_file, read_file_bytes, resolved_path,
     write_file,
 };
-pub use env::args;
+pub use env::{args, var};
 pub use errors::{Error, Result};
 pub use fs::errors::{FileSystemError, FileSystemException};
 pub use fs::ls_node_type::LsNodeType;
@@ -63,8 +63,8 @@ pub use io::buffer::FileBuffer;
 pub use io::error::Code;
 pub use sh::{shell_command, shell_command_string_output, shell_command_vec_output};
 pub use sys::{
-    best_guess_home, env_var, get_stdout_string, get_subprocess_output, guess_unix_home, home,
-    parse_u32, safe_string, Group, User,
+    best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
+    safe_string, Group, User,
 };
 pub use walk::entry::Entry;
 pub use walk::info::Info;
@@ -72,6 +72,6 @@ pub use walk::t::{NoopProgressHandler, WalkProgressHandler};
 pub use walk::{glob, read_dir, read_dir_size, walk_dir, walk_nodes};
 
 lazy_static! {
-    static ref TILDE: String =
-        format!("{}/", home().unwrap_or(String::from("~")).trim_end_matches('/'));
+    pub static ref USER: User = User::id().unwrap_or_default();
+    pub static ref TILDE: String = format!("{}/", USER.home().expect("current UNIX user HOME"));
 }

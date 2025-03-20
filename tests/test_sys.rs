@@ -1,10 +1,6 @@
 use iocore::errors::*;
 use iocore::sys::*;
-
-#[test]
-fn test_home() {
-    assert!(home().unwrap().contains(&env_var("USER").unwrap()));
-}
+use iocore::env::var as env_var;
 
 #[cfg(target_os = "macos")]
 #[test]
@@ -25,10 +21,10 @@ fn test_user_from_id_cmd_string() -> Result<()> {
     let stdout = format!("uid=501(name) gid=20(group) groups=20(group),101(access_bpf),12(everyone),61(localaccounts),79(_appserverusr),80(admin),81(_appserveradm),98(_lpadmin),701(com.apple.sharepoint.group.1),702(com.apple.sharepoint.group.2),33(_appstore),100(_lpoperator),204(_developer),250(_analyticsusers),395(com.apple.access_ftp),398(com.apple.access_screensharing)");
     let user = User::from_id_cmd_string(stdout)?;
 
-    assert_eq!(user.gid, 20);
+    assert_eq!(user.gid, Some(20));
     assert_eq!(user.uid, 501);
     assert_eq!(user.name, "name");
-    assert_eq!(user.group, "group");
+    assert_eq!(user.group, Some("group".to_string()));
     assert_eq!(
         user.groups,
         vec![

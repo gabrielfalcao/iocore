@@ -4,6 +4,7 @@ use std::str::FromStr;
 use regex::Regex;
 use sanitation::SString;
 
+use crate::env::var as env_var;
 use crate::Error;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -13,10 +14,10 @@ pub struct Group {
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct User {
-    pub gid: u32,
     pub uid: u32,
+    pub gid: Option<u32>,
     pub name: String,
-    pub group: String,
+    pub group: Option<String>,
     pub groups: Vec<Group>,
 }
 
@@ -24,6 +25,18 @@ impl User {
     pub fn id() -> Result<User, Error> {
         let stdout = get_stdout_string("/usr/bin/id")?;
         Ok(User::from_id_cmd_string(stdout)?)
+    }
+
+    pub fn from_env() -> User {
+        let uid = env_var_uid().unwrap();
+        let name = env_var_user();
+        User {
+            uid,
+            name,
+            group: None,
+            gid: None,
+            groups: Vec::new(),
+        }
     }
 
     pub fn from_id_cmd_string(id_stdout: impl std::fmt::Display) -> Result<User, Error> {
@@ -50,9 +63,9 @@ impl User {
                 .collect::<Vec<Group>>(); //(|captures|captures.extract()).collect::<Vec<_>>(),
             Ok(User {
                 uid,
-                gid,
+                gid: Some(gid),
                 name,
-                group,
+                group: Some(group),
                 groups,
             })
         } else {
@@ -66,8 +79,8 @@ impl User {
         self.uid
     }
 
-    pub fn gid(&self) -> u32 {
-        self.gid
+    pub fn gid(&self) -> Option<u32> {
+        self.gid.clone()
     }
 
     pub fn name(&self) -> String {
@@ -135,13 +148,6 @@ pub fn get_stdout_string(executable: &str) -> Result<String, Error> {
     safe_string(stdout.as_bytes(), &format!("stdout of {:#?}", executable))
 }
 
-pub fn env_var(key: impl Into<String>) -> Result<String, Error> {
-    let key = key.into();
-    Ok(std::env::var(&key).map_err(|e| {
-        Error::EnvironmentVarError(format!("fetching environment variable {:#?}: {}", &key, e))
-    })?)
-}
-
 pub fn safe_string(bytes: &[u8], short_description: &str) -> Result<String, Error> {
     Ok(SString::new(bytes)
         .safe()
@@ -198,7 +204,12 @@ fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Err
     )?
     .to_string())
 }
-
+fn env_var_uid() -> Result<u32, Error> {
+    Ok(parse_u32(env_var("UID")?, "UID environment variable")?)
+}
+fn env_var_user() -> String {
+    env_var("USER").unwrap_or_default()
+}
 fn path_owned_expectedly(path: crate::Path, user: &str, uid: u32) -> Result<crate::Path, Error> {
     if path.node().uid == uid {
         Ok(path)
@@ -248,27 +259,8 @@ pub fn best_guess_home(user: impl Into<String>) -> Result<String, Error> {
         guess_unix_home(&user)?
     })
 }
-pub fn home() -> Result<String, Error> {
-    let user = if let Ok(user) = env_var("USER") {
-        user.trim().to_string()
-    } else {
-        get_stdout_string("/usr/bin/whoami")?.trim().to_string()
-    };
-
-    let uid = if let Ok(uid_s) = env_var("UID") {
-        u32::from_str(&uid_s).map_err(|_| {
-            Error::SafetyError(format!(
-                "environment variable UID holds a non-numeric value: {:#?}",
-                uid_s
-            ))
-        })?
-    } else if let Ok(best_guess_path) = best_guess_home(user) {
-        return Ok(best_guess_path);
-    } else {
-        return Err(Error::HomePathError(format!("could not secure home path from neither HOME environment variable nor guess based on UID environment variable")));
-    };
-
-    unix_user_info_home("/etc/passwd", &user, uid)
-        .or(env_var_home(&user, uid, None))
-        .or(best_guess_home(&user))
+impl Default for User {
+    fn default() -> User {
+        User::from_env()
+    }
 }

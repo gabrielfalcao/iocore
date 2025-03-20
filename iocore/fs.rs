@@ -66,6 +66,10 @@ impl Path {
         }
     }
 
+    /// `safe` creates a new [`Path`] expanding `~` to the current unix user HOME
+    ///
+    /// > NOTE: the current user `HOME` is obtained once at the
+    /// > library initialization and stored in the heap.
     pub fn safe(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = path.to_string();
         let string = remove_duplicate_separators(path);
@@ -85,19 +89,23 @@ impl Path {
         Ok(Path { inner: string })
     }
 
+    /// `raw` instantiates a [`Path`] with the given string making no validations nor extensions, unlike [`new`] and [`safe`]
     pub fn raw(inner: impl std::fmt::Display) -> Path {
         let inner = inner.to_string();
         Path { inner }
     }
 
+    /// `from_path_buf` returns a [`Path`] from a [`std::path::PathBuf`]
     pub fn from_path_buf(path_buf: &std::path::PathBuf) -> Path {
         Path::raw(path_buf.display())
     }
 
+    /// `from_std_path` returns a [`Path`] from a [`std::path::Path`] reference
     pub fn from_std_path(path: &std::path::Path) -> Path {
         Path::raw(path.display())
     }
 
+    /// `cwd` returns a [`Path`] from the working directory of the current unix process.
     pub fn cwd() -> Path {
         Path::new(
             ::std::env::current_dir()
@@ -107,16 +115,17 @@ impl Path {
         .try_canonicalize()
     }
 
+    /// `tildify` returns a new [`Path`] where the current unix user HOME is replaced with "~/"
     pub fn tildify(&self) -> Path {
         let t = crate::TILDE.to_string();
         let s = self.to_string();
         if s.starts_with(&t) {
-            Path::new(s.replacen(&t, "~", 1))
+            Path::raw(s.replacen(&t, &format!("~{}", MAIN_SEPARATOR_STR), 1))
         } else {
             self.clone()
         }
     }
-
+    /// `existing` returns a [`Path`] only if the given string points to a valid existing location in the filesystem
     pub fn existing(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
         match path.kind() {
@@ -706,7 +715,7 @@ impl Path {
 
     pub fn expand(&self) -> Result<Path, Error> {
         if self.to_string().starts_with("~") {
-            Ok(Path::raw(expand_home_regex(&self.to_string(), crate::sys::home()?.as_str())))
+            Ok(Path::raw(expand_home_regex(&self.to_string(), &crate::TILDE.to_string())))
         } else {
             Ok(self.clone())
         }

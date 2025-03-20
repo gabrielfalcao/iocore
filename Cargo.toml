@@ -24,7 +24,7 @@ lazy_static = "1.4.0"
 sanitation = { version = "1.0.0" }
 serde = { version = "1.0.219", features = ["derive", "alloc", "rc"] }
 regex = { version = "1.10.3", features = ["use_std"] }
-thread-groups = { version = "0.0.3" }
+thread-groups = { version = "0.1.0" }
 filetime = "0.2.25"
 trilobyte = "0.0.1"
 

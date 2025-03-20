@@ -41,7 +41,7 @@ pub fn absolutely_current_path() -> Result<std::path::PathBuf, Error> {
 pub fn resolved_path(path: &str) -> Result<String, Error> {
     Ok(absolute_path(path)?
         .to_string_lossy()
-        .replace(&crate::sys::home()?, "~")
+        .replace(&crate::TILDE.to_string(), "~")
         .to_string())
 }
 

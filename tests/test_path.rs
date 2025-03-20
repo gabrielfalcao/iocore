@@ -117,10 +117,12 @@ fn test_join_extension() {
 
 #[test]
 fn test_tildify() {
-    let cargo_path = Path::raw(User::id().unwrap().home().unwrap()).join(".cargo");
+    let cargo_path = Path::raw(iocore::USER.home().unwrap()).join(".cargo");
 
     assert_eq!(cargo_path.to_string().starts_with("~"), false);
-    assert_eq!(cargo_path.tildify().to_string().starts_with("~"), true);
+    assert_eq!(cargo_path.tildify().to_string(), "~/.cargo");
+
+    assert_eq!(Path::new(cargo_path.tildify().to_string()).to_string(), cargo_path.to_string());
 }
 
 #[test]
