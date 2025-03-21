@@ -1,8 +1,6 @@
-cargo-features = ["per-package-target"]
-
 [package]
 name = "iocore"
-version = "0.1001.0"
+version = "0.1010.0"
 edition = "2024"
 description = "I/O Core Utilities"
 documentation = "https://docs.rs/iocore"
@@ -21,12 +19,12 @@ test = []
 chrono = { version = "0.4.31", features = ["alloc", "serde"] }
 glob = "0.3.1"
 lazy_static = "1.4.0"
-sanitation = { version = "1.0.0" }
+sanitation = { version = "1.0.1" }
 serde = { version = "1.0.219", features = ["derive", "alloc", "rc"] }
 regex = { version = "1.10.3", features = ["use_std"] }
-thread-groups = { version = "0.1.0" }
+thread-groups = { version = "0.1.1" }
 filetime = "0.2.25"
-trilobyte = "0.0.1"
+trilobyte = { version = "0.1.0" }
 
 [dev-dependencies]
 clap = { version = "4.5.20", features = ["derive"] }

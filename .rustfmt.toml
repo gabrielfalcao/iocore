@@ -79,7 +79,6 @@ struct_variant_width = 35		# Maximum width in the body of a struct variant befor
 trailing_comma = "Vertical"		# How to handle trailing commas for lists
 trailing_semicolon = true		# Add trailing semicolon after break, continue and return
 type_punctuation_density = "Wide"	# Determines if '+' or '=' are wrapped in spaces in the punctuation of types
-unstable_features = false		# Enables unstable features. Only available on nightly channel
 use_field_init_shorthand = false	# Use field initialization shorthand if possible
 use_small_heuristics = "Max"		# Whether to use different formatting for items and expressions if they satisfy a heuristic notion of 'small'
 use_try_shorthand = true		# Replace uses of the try! macro by the ? shorthand

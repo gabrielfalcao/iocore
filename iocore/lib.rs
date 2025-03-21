@@ -9,21 +9,20 @@
 //!⣿⣿⣿⠏⣰⣿⣿⣿⣿⣿⣿⡿⠟⠛⠃⠘⢿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿                 |___\___/ \___\___/_| \___|
 //!⣿⣿⠏⣸⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⠀⠀⠈⢿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿
 //!⣿⡏⢠⣿⣿⣿⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿
-//!⣿⠁⢸⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿     _/_/        _/    _/_/      _/_/      _/        _/_/
-//!⣿⠀⢈⣉⣉⣉⣉⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿  _/    _/    _/_/  _/    _/  _/    _/  _/_/      _/    _/
-//!⣿⡀⠀⠈⠛⠿⢿⣿⣷⣶⣤⣤⣤⣄⣀⣠⣤⣄⡉⠻⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿ _/    _/      _/  _/    _/  _/    _/    _/      _/    _/
-//!⣿⣇⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠛⠛⠛⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿_/    _/      _/  _/    _/  _/    _/    _/      _/    _/
-//!⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿ _/_/    _/  _/    _/_/      _/_/      _/  _/    _/_/
+//!⣿⠁⢸⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿     _/_/        _/    _/_/      _/    _/_/          _/_/
+//!⣿⠀⢈⣉⣉⣉⣉⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿  _/    _/    _/_/  _/    _/  _/_/  _/    _/      _/    _/
+//!⣿⡀⠀⠈⠛⠿⢿⣿⣷⣶⣤⣤⣤⣄⣀⣠⣤⣄⡉⠻⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿ _/    _/      _/  _/    _/    _/  _/    _/      _/    _/
+//!⣿⣇⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠛⠛⠛⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿_/    _/      _/  _/    _/    _/  _/    _/      _/    _/
+//!⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿ _/_/    _/  _/    _/_/      _/    _/_/    _/    _/_/
 //!⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿
 //!⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿
 //!⣿⣿⣿⣿⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿⣿
 //!⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⣤⣤⣤⣴⣶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-//!```
+//!//!```
 //!
 //!
 //![![Continuous Integration](https://github.com/gabrielfalcao/iocore/actions/workflows/ci.yml/badge.svg)](https://github.com/gabrielfalcao/iocore/actions/workflows/ci.yml)
 #![cfg(target_family = "unix")]
-#![feature(io_error_more, thread_id_value, io_error_inprogress)]
 #[macro_use]
 extern crate lazy_static;
 pub mod coreio;
@@ -58,7 +57,7 @@ pub use fs::path_utils::{
 pub use fs::perms::PathPermissions;
 pub use fs::size::{ByteUnit, Size};
 pub use fs::timed::PathDateTime;
-pub use fs::{sort_paths, Path};
+pub use fs::Path;
 pub use io::buffer::FileBuffer;
 pub use io::error::Code;
 pub use sh::{shell_command, shell_command_string_output, shell_command_vec_output};

@@ -1,6 +1,5 @@
-use crate::Error;
-use crate::{Node, Path};
 
+use crate::{Error, Node, Path};
 pub type Matcher = fn(&Path, &Node) -> bool;
 pub type ErrorHandler = fn(&Path, Error) -> Option<Error>;
 pub type MaxDepth = usize;
@@ -13,7 +12,7 @@ pub trait WalkProgressHandler: Send + Sync + 'static {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct NoopProgressHandler;
 
 impl WalkProgressHandler for NoopProgressHandler {

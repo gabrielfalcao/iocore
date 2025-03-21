@@ -1,3 +1,4 @@
+use std::cmp::{Ord, Ordering, PartialOrd};
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -6,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Info, Node, Path, PathType, Size};
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Entry {
     Directory(Info),
     EmptyDirectory(Info),
@@ -14,6 +15,17 @@ pub enum Entry {
     None(Info),
     Setuid(Info),
     Symlink(Info),
+}
+
+impl PartialOrd for Entry {
+    fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
+        self.path().partial_cmp(&other.path())
+    }
+}
+impl Ord for Entry {
+    fn cmp(&self, other: &Entry) -> Ordering {
+        self.path().cmp(&other.path())
+    }
 }
 
 impl Display for Entry {

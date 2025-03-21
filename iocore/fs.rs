@@ -125,6 +125,7 @@ impl Path {
             self.clone()
         }
     }
+
     /// `existing` returns a [`Path`] only if the given string points to a valid existing location in the filesystem
     pub fn existing(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
@@ -954,7 +955,7 @@ impl Path {
             .map(|dir_entry| dir_entry.unwrap())
             .map(|dir_entry| Path::from(dir_entry))
             .collect();
-        sort_paths(&mut paths);
+        paths.sort();
         Ok(paths)
     }
 
@@ -991,13 +992,45 @@ impl Eq for Path {}
 
 impl PartialOrd for Path {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        partial_cmp_paths_by_length(self, other)
-            .partial_cmp(&partial_cmp_paths_by_parts(self, other))
+        partial_cmp_paths_by_parts(self, other)
     }
 }
 impl Ord for Path {
     fn cmp(&self, other: &Self) -> Ordering {
-        cmp_paths_by_length(self, other).cmp(&cmp_paths_by_parts(self, other))
+        cmp_paths_by_parts(self, other)
+    }
+
+    fn max(self, other: Path) -> Path {
+        let self_parts = self.split();
+        let other_parts = other.split();
+        if self_parts.len() > other_parts.len() {
+            self
+        } else {
+            other
+        }
+    }
+
+    fn min(self, other: Path) -> Path {
+        let self_parts = self.split();
+        let other_parts = other.split();
+        if self_parts.len() < other_parts.len() {
+            self
+        } else {
+            other
+        }
+    }
+
+    fn clamp(self, min: Path, max: Path) -> Path {
+        let self_parts = self.split();
+        let min_parts = min.split();
+        let max_parts = max.split();
+        if self_parts.len() > max_parts.len() {
+            max
+        } else if self_parts.len() < min_parts.len() {
+            min
+        } else {
+            self
+        }
     }
 }
 impl Debug for Path {
@@ -1126,20 +1159,12 @@ impl From<&std::path::Path> for Path {
 }
 
 pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
-    b.split().len().partial_cmp(&a.split().len())
-}
-pub(crate) fn partial_cmp_paths_by_length(a: &Path, b: &Path) -> Option<Ordering> {
     b.is_dir()
         .partial_cmp(&a.is_dir())
-        .partial_cmp(&b.to_string().len().partial_cmp(&a.to_string().len()))
+        .partial_cmp(&b.split().len().partial_cmp(&a.split().len()))
 }
 pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
-    b.is_dir().cmp(&a.is_dir()).cmp(&a.split().len().cmp(&b.split().len()))
-}
-pub(crate) fn cmp_paths_by_length(a: &Path, b: &Path) -> Ordering {
-    b.is_dir().cmp(&a.is_dir()).cmp(&a.to_string().len().cmp(&b.to_string().len()))
-}
-pub fn sort_paths(paths: &mut Vec<Path>) {
-    paths.sort_by(|a, b| cmp_paths_by_length(&a, &b));
-    paths.sort_by(|a, b| cmp_paths_by_parts(&a, &b));
+    b.is_dir()
+        .cmp(&a.is_dir())
+        .cmp(&b.split().cmp(&a.split()).cmp(&a.split().len().cmp(&b.split().len())))
 }

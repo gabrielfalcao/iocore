@@ -575,13 +575,10 @@ impl Code {
             std::io::ErrorKind::DirectoryNotEmpty => Code::ENOTEMPTY,
             std::io::ErrorKind::ExecutableFileBusy => Code::EBUSY, // ETXTBSY
             std::io::ErrorKind::FileTooLarge => Code::EFBIG,
-            std::io::ErrorKind::FilesystemLoop => Code::ELOOP,
             std::io::ErrorKind::QuotaExceeded => Code::EDQUOT,
             std::io::ErrorKind::HostUnreachable => Code::EHOSTUNREACH,
-            std::io::ErrorKind::InProgress => Code::EINPROGRESS,
             std::io::ErrorKind::Interrupted => Code::EINTR,
             std::io::ErrorKind::InvalidData => Code::EINVAL,
-            std::io::ErrorKind::InvalidFilename => Code::EMSGSIZE,
             std::io::ErrorKind::InvalidInput => Code::EINVAL,
             std::io::ErrorKind::IsADirectory => Code::EISDIR,
             std::io::ErrorKind::NetworkDown => Code::ENETDOWN,

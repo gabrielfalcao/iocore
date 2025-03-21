@@ -2,7 +2,7 @@ use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
-use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result, User};
+use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result};
 use iocore_test::{folder_path, path_to_test_file};
 use trilobyte::TriloByte;
 
@@ -334,5 +334,58 @@ fn test_path_timestamps() -> Result<()> {
             "PathDateTime[2025-03-18T20:49:43.445802000-03:00]"
         );
     }
+    Ok(())
+}
+
+
+#[test]
+fn test_path_ordering() -> Result<()>{
+    let mut paths = vec![
+        folder_path!("test_path_ordering/a"),
+        path_to_test_file!("test_path_ordering/a/a").write(&[])?,
+        path_to_test_file!("test_path_ordering/a/b").write(&[])?,
+        path_to_test_file!("test_path_ordering/a/c").write(&[])?,
+        path_to_test_file!("test_path_ordering/a/d").write(&[])?,
+        folder_path!("test_path_ordering/b"),
+        path_to_test_file!("test_path_ordering/b/a").write(&[])?,
+        path_to_test_file!("test_path_ordering/b/b").write(&[])?,
+        path_to_test_file!("test_path_ordering/b/c").write(&[])?,
+        path_to_test_file!("test_path_ordering/b/d").write(&[])?,
+        folder_path!("test_path_ordering/c"),
+        path_to_test_file!("test_path_ordering/c/a").write(&[])?,
+        path_to_test_file!("test_path_ordering/c/b").write(&[])?,
+        path_to_test_file!("test_path_ordering/c/c").write(&[])?,
+        path_to_test_file!("test_path_ordering/c/d").write(&[])?,
+        folder_path!("test_path_ordering/d"),
+        path_to_test_file!("test_path_ordering/d/a").write(&[])?,
+        path_to_test_file!("test_path_ordering/d/b").write(&[])?,
+        path_to_test_file!("test_path_ordering/d/c").write(&[])?,
+        path_to_test_file!("test_path_ordering/d/d").write(&[])?,
+    ];
+    paths.sort();
+
+    assert_eq!(paths, vec![
+        folder_path!("test_path_ordering/a"),
+        folder_path!("test_path_ordering/b"),
+        folder_path!("test_path_ordering/c"),
+        folder_path!("test_path_ordering/d"),
+        path_to_test_file!("test_path_ordering/a/a"),
+        path_to_test_file!("test_path_ordering/a/b"),
+        path_to_test_file!("test_path_ordering/a/c"),
+        path_to_test_file!("test_path_ordering/a/d"),
+        path_to_test_file!("test_path_ordering/b/a"),
+        path_to_test_file!("test_path_ordering/b/b"),
+        path_to_test_file!("test_path_ordering/b/c"),
+        path_to_test_file!("test_path_ordering/b/d"),
+        path_to_test_file!("test_path_ordering/c/a"),
+        path_to_test_file!("test_path_ordering/c/b"),
+        path_to_test_file!("test_path_ordering/c/c"),
+        path_to_test_file!("test_path_ordering/c/d"),
+        path_to_test_file!("test_path_ordering/d/a"),
+        path_to_test_file!("test_path_ordering/d/b"),
+        path_to_test_file!("test_path_ordering/d/c"),
+        path_to_test_file!("test_path_ordering/d/d"),
+    ]);
+
     Ok(())
 }

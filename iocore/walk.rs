@@ -5,7 +5,7 @@ pub mod t;
 use thread_groups::ThreadGroup;
 
 use crate::errors::Error;
-use crate::fs::{cmp_paths_by_length, cmp_paths_by_parts};
+use crate::fs::cmp_paths_by_parts;
 use crate::{Entry, Info, NoopProgressHandler, Path, PathType, Size, WalkProgressHandler};
 
 pub fn read_dir(
@@ -50,7 +50,7 @@ pub fn read_dir(
             result.push(entry);
         }
     }
-    sort_entries(&mut result);
+    result.sort();
     Ok(result)
 }
 
@@ -111,7 +111,13 @@ pub fn walk_dir(
             result.push(Entry::from(Info::of(&path)));
         }
     }
-    for entries in threads.results().iter().map(|o| o.clone().unwrap()).flatten() {
+    for entries in threads
+        .results()
+        .iter()
+        .filter(|o| o.is_ok())
+        .map(|o| o.clone().unwrap())
+        .flatten()
+    {
         for mut entry in entries {
             if let Entry::Directory(info) = entry.clone() {
                 let subentries =
@@ -124,7 +130,7 @@ pub fn walk_dir(
             }
         }
     }
-    sort_entries(&mut result);
+    result.sort();
     Ok(result)
 }
 
@@ -156,7 +162,7 @@ pub fn walk_nodes(
             }
         }
     }
-    sort_entries(&mut result);
+    result.sort();
     Ok(result)
 }
 
@@ -174,8 +180,4 @@ pub fn glob(pattern: impl Into<String>) -> Result<Vec<Path>, Error> {
         result.push(path.absolute()?);
     }
     Ok(result)
-}
-pub(crate) fn sort_entries(entries: &mut Vec<Entry>) {
-    entries.sort_by(|a, b| cmp_paths_by_length(&a.path(), &b.path()));
-    entries.sort_by(|a, b| cmp_paths_by_parts(&a.path(), &b.path()));
 }

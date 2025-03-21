@@ -1,6 +1,5 @@
 use crate::{FileSystemError, FileSystemException};
 
-
 /// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
 pub enum Error {
