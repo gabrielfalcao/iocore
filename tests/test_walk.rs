@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use iocore::coreio::absolute_path;
 use iocore::errors::Error;
 use iocore::{walk_dir, walk_nodes, NoopProgressHandler, Path};
+use iocore_test::folder_path;
 
 #[test]
 fn test_walk_nodes_glob() -> Result<(), Error> {
@@ -98,6 +99,20 @@ fn test_walk_dir() -> Result<(), Error> {
             "fs/size.rs",
             "fs/timed.rs"
         ]
+    );
+    Ok(())
+}
+
+#[test]
+fn test_walk_dir_fixtures() -> Result<(), Error> {
+    let path = folder_path!("fixtures");
+    let entries = walk_dir(&path, NoopProgressHandler, None, None)?;
+    let paths = entries.iter()
+        .map(|entry| entry.path().relative_to(&path).to_string())
+        .collect::<Vec<String>>();
+    assert_eq!(
+        paths.len(),
+        146,
     );
     Ok(())
 }

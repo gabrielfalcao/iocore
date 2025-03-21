@@ -124,7 +124,6 @@ pub fn walk_dir(
                     walk_dir(&info.path(), handle.clone(), Some(max_depth), Some(depth + 1))?;
                 entry.increment_size(subentries.iter().map(|s| s.size()).sum());
                 result.push(entry);
-                result.extend_from_slice(&subentries);
             } else {
                 result.push(entry);
             }
