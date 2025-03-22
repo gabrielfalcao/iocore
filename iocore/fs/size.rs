@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ByteUnit {
     Byte,
     Kilo,
@@ -24,7 +24,7 @@ impl ByteUnit {
         1024.into()
     }
 
-    pub fn scale(self) -> u64 {
+    pub fn scale(self) -> u32 {
         use ByteUnit::*;
         match self {
             Byte => 1,
@@ -62,15 +62,10 @@ impl ByteUnit {
     }
 
     pub fn fit(size: Size) -> (ByteUnit, Option<u64>) {
-        let variants = ByteUnit::variants();
-        for (n, b) in variants.iter().enumerate() {
-            if n > 0 && b.as_u64() <= size.as_u64() {
-                let fittest = variants[n];
-                let remainder = size.as_u64() % fittest.as_u64();
-                return (fittest, if remainder > 0 { Some(remainder) } else { None });
-            }
-        }
-        (ByteUnit::Byte, None)
+        let log = size.as_u64().ilog(1024);
+        let variant = ByteUnit::variants()[log as usize];
+        let remainder = size.as_u64() % variant.as_u64();
+        (variant, if remainder > 0 { Some(remainder) } else { None })
     }
 
     pub fn fmt(size: Size) -> String {
@@ -87,9 +82,14 @@ impl ByteUnit {
     }
 }
 
-#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Size {
     bytes: u64,
+}
+impl Display for Size {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", ByteUnit::fmt(*self))
+    }
 }
 
 impl Default for Size {
@@ -108,24 +108,13 @@ impl Size {
         unit
     }
 
-    pub fn exp(self, by: u64) -> Size {
-        let bytes = self.as_u64();
-        match by {
-            0 => 1,
-            1 => bytes,
-            o => [..o + 1].iter().map(|_| bytes).sum(),
-        }
-        .into()
+    pub fn exp(self, by: u32) -> Size {
+        Size::from(self.bytes.checked_pow(by).unwrap_or(self.bytes))
     }
 }
 impl From<u64> for Size {
     fn from(bytes: u64) -> Size {
         Size { bytes }
-    }
-}
-impl Display for Size {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", ByteUnit::fmt(*self))
     }
 }
 
@@ -195,5 +184,38 @@ impl Sum for Size {
             a += s;
         }
         a
+    }
+}
+
+#[cfg(test)]
+mod test_byteunit {
+    use super::*;
+    #[test]
+    fn test_unit_scale() {
+        assert_eq!(ByteUnit::Byte.scale(), 1);
+        assert_eq!(ByteUnit::Kilo.scale(), 2);
+        assert_eq!(ByteUnit::Mega.scale(), 3);
+        assert_eq!(ByteUnit::Giga.scale(), 4);
+        assert_eq!(ByteUnit::Tera.scale(), 5);
+        assert_eq!(ByteUnit::Peta.scale(), 6);
+    }
+    #[test]
+    fn test_size_unit() {
+        assert_eq!(ByteUnit::fit(Size::from(1)), (ByteUnit::Byte, None));
+        assert_eq!(ByteUnit::fit(Size::from(1024)), (ByteUnit::Kilo, None));
+        assert_eq!(ByteUnit::fit(Size::from(2037)), (ByteUnit::Kilo, Some(1013)));
+        assert_eq!(ByteUnit::fit(Size::from(1024 * 1024)), (ByteUnit::Mega, None));
+        assert_eq!(ByteUnit::fit(Size::from(1024 * 1024 + 37)), (ByteUnit::Mega, Some(37)));
+        assert_eq!(ByteUnit::fit(Size::from(1024 * 1024 * 1024)), (ByteUnit::Giga, None));
+        assert_eq!(ByteUnit::fit(Size::from(1024 * 1024 * 1024 + 37)), (ByteUnit::Giga, Some(37)));
+        assert_eq!(ByteUnit::fit(Size::from(1024 * 1024 * 1024 * 1024)), (ByteUnit::Tera, None));
+        assert_eq!(
+            ByteUnit::fit(Size::from(1024 * 1024 * 1024 * 1024 * 1024)),
+            (ByteUnit::Peta, None)
+        );
+        assert_eq!(
+            ByteUnit::fit(Size::from(1024 * 1024 * 1024 * 1024 * 1024 + 37)),
+            (ByteUnit::Peta, Some(37))
+        );
     }
 }

@@ -33,7 +33,7 @@ impl FileBuffer {
             return Err(Error::FileSystemError(format!("{} is not a file", path)));
         }
         let mut file = path.open(OpenOptions::new().read(true).write(true))?;
-        let size = path.size().as_u64();
+        let size = path.size()?.as_u64();
         let length = TryInto::<usize>::try_into(size).unwrap();
         let index = length;
         let mut data = Vec::with_capacity(length);

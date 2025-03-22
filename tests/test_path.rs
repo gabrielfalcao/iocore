@@ -3,7 +3,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
 use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result};
-use iocore_test::{folder_path, path_to_test_file};
+use iocore_test::{folder_path, path_to_test_file, seq_bytes};
 use trilobyte::TriloByte;
 
 #[test]
@@ -292,7 +292,8 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_
 
 #[test]
 fn test_path_permissions() -> Result<()> {
-    let file_mode_640 = path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
+    let file_mode_640 =
+        path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
     let metadata = std::fs::metadata(file_mode_640.path())?;
 
     assert_eq!(format!("{:o}", metadata.mode()), "100640");
@@ -337,9 +338,8 @@ fn test_path_timestamps() -> Result<()> {
     Ok(())
 }
 
-
 #[test]
-fn test_path_ordering() -> Result<()>{
+fn test_path_ordering() -> Result<()> {
     let mut paths = vec![
         folder_path!("test_path_ordering/a"),
         path_to_test_file!("test_path_ordering/a/a").write(&[])?,
@@ -364,28 +364,51 @@ fn test_path_ordering() -> Result<()>{
     ];
     paths.sort();
 
-    assert_eq!(paths, vec![
-        folder_path!("test_path_ordering/a"),
-        folder_path!("test_path_ordering/b"),
-        folder_path!("test_path_ordering/c"),
-        folder_path!("test_path_ordering/d"),
-        path_to_test_file!("test_path_ordering/a/a"),
-        path_to_test_file!("test_path_ordering/a/b"),
-        path_to_test_file!("test_path_ordering/a/c"),
-        path_to_test_file!("test_path_ordering/a/d"),
-        path_to_test_file!("test_path_ordering/b/a"),
-        path_to_test_file!("test_path_ordering/b/b"),
-        path_to_test_file!("test_path_ordering/b/c"),
-        path_to_test_file!("test_path_ordering/b/d"),
-        path_to_test_file!("test_path_ordering/c/a"),
-        path_to_test_file!("test_path_ordering/c/b"),
-        path_to_test_file!("test_path_ordering/c/c"),
-        path_to_test_file!("test_path_ordering/c/d"),
-        path_to_test_file!("test_path_ordering/d/a"),
-        path_to_test_file!("test_path_ordering/d/b"),
-        path_to_test_file!("test_path_ordering/d/c"),
-        path_to_test_file!("test_path_ordering/d/d"),
-    ]);
+    assert_eq!(
+        paths,
+        vec![
+            folder_path!("test_path_ordering/a"),
+            folder_path!("test_path_ordering/b"),
+            folder_path!("test_path_ordering/c"),
+            folder_path!("test_path_ordering/d"),
+            path_to_test_file!("test_path_ordering/a/a"),
+            path_to_test_file!("test_path_ordering/a/b"),
+            path_to_test_file!("test_path_ordering/a/c"),
+            path_to_test_file!("test_path_ordering/a/d"),
+            path_to_test_file!("test_path_ordering/b/a"),
+            path_to_test_file!("test_path_ordering/b/b"),
+            path_to_test_file!("test_path_ordering/b/c"),
+            path_to_test_file!("test_path_ordering/b/d"),
+            path_to_test_file!("test_path_ordering/c/a"),
+            path_to_test_file!("test_path_ordering/c/b"),
+            path_to_test_file!("test_path_ordering/c/c"),
+            path_to_test_file!("test_path_ordering/c/d"),
+            path_to_test_file!("test_path_ordering/d/a"),
+            path_to_test_file!("test_path_ordering/d/b"),
+            path_to_test_file!("test_path_ordering/d/c"),
+            path_to_test_file!("test_path_ordering/d/d"),
+        ]
+    );
 
+    Ok(())
+}
+
+#[test]
+fn test_path_size() -> Result<()> {
+    let path_a = path_to_test_file!("test_path_size/a").write(&seq_bytes(104))?;
+    assert_eq!(path_a.size()?.as_u64(), 104);
+    assert_eq!(path_a.size()?.to_string(), "104B");
+
+    let path_b = path_to_test_file!("test_path_size/b").write(&seq_bytes(4096))?;
+    assert_eq!(path_b.size()?.as_u64(), 4096);
+    assert_eq!(path_b.size()?.to_string(), "4Kb");
+
+    let path_c = path_to_test_file!("test_path_size/c").write(&seq_bytes(4194304))?;
+    assert_eq!(path_c.size()?.to_string(), "4Mb");
+    assert_eq!(path_c.size()?.as_u64(), 4194304);
+
+    let mut sizes = vec![path_b.size()?, path_c.size()?, path_a.size()?];
+    sizes.sort();
+    assert_eq!(sizes, vec![path_a.size()?, path_b.size()?, path_c.size()?]);
     Ok(())
 }

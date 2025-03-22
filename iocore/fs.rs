@@ -484,8 +484,15 @@ impl Path {
             .map_err(|e| (FileSystemError::UnsafeFileContent, self.clone(), e.to_string()).into())
     }
 
-    pub fn size(&self) -> Size {
-        Size::from(self.node().size)
+    pub fn size(&self) -> Result<Size, Error> {
+        let metadata = self.path_metadata().map_err(|error| {
+            Error::FileSystemError(format!(
+                "error checking size of {:#?}: {}",
+                self.to_string(),
+                error
+            ))
+        })?;
+        Ok(Size::from(metadata.len()))
     }
 
     pub fn is_absolute(&self) -> bool {
@@ -970,8 +977,6 @@ impl Path {
         timestamps.set_modified_time(new_modified_time)?;
         Ok(self.clone())
     }
-}
-impl Path {
     fn path_metadata(&self) -> Result<std::fs::Metadata, Error> {
         Ok(std::fs::metadata(self.path()).map_err(|error| {
             let io_error = Error::IOError(error.kind()).to_string();

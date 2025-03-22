@@ -1,15 +1,28 @@
+use std::cmp::Ordering;
+
 use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
 use crate::fs::timed::PathDateTime;
 use crate::{path_datetime_from_metadata_field, Path};
 /// `PathTimestamps`
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PathTimestamps {
     pub path: Path,
     pub accessed: PathDateTime,
     pub modified: PathDateTime,
     pub created: PathDateTime,
+}
+
+impl PartialOrd for PathTimestamps {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.modified.partial_cmp(&other.modified)
+    }
+}
+impl Ord for PathTimestamps {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.modified.cmp(&other.modified)
+    }
 }
 
 impl PathTimestamps {
@@ -27,11 +40,11 @@ impl PathTimestamps {
         })
     }
 
-    pub fn fields(&self) -> [(&'static str, PathDateTime); 3] {
+    pub fn fields(&self) -> [(&'static str, PathDateTime); 1] {
         [
-            ("accessed", self.accessed.clone()),
+            // ("accessed", self.accessed.clone()),
             ("modified", self.modified.clone()),
-            ("created", self.created.clone()),
+            // ("created", self.created.clone()),
         ]
     }
 
@@ -105,4 +118,82 @@ macro_rules! path_datetime_from_metadata_field {
             ))
         })?)
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cmp::Ordering;
+
+    use crate::{Path, PathDateTime, PathTimestamps, Result};
+
+    #[test]
+    fn test_ordering_same_path() -> Result<()> {
+        let old_ts = PathDateTime::parse_from_str("2025-03-18T00:10:20", "%Y-%m-%dT%H:%M:%S")?;
+
+        let old = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: old_ts,
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+        let new_ts = PathDateTime::parse_from_str("2025-03-22T00:10:20", "%Y-%m-%dT%H:%M:%S")?;
+
+        let new = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: new_ts,
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+
+        assert_eq!(old.cmp(&new), Ordering::Less);
+        assert_eq!(new.cmp(&old), Ordering::Greater);
+        let mut ts = vec![new.clone(), old.clone()];
+        ts.sort();
+
+        assert_eq!(ts, vec![old, new]);
+        Ok(())
+    }
+    #[test]
+    fn test_not_equal_same_path_and_different_modified_time() -> Result<()> {
+        let old_ts = PathDateTime::parse_from_str("2025-03-18T00:10:20", "%Y-%m-%dT%H:%M:%S")?;
+
+        let old = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: old_ts,
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+        let new_ts = PathDateTime::parse_from_str("2025-03-22T00:10:20", "%Y-%m-%dT%H:%M:%S")?;
+
+        let new = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: new_ts,
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+
+        assert_ne!(old, new);
+        Ok(())
+    }
+    #[test]
+    fn test_equal_same_path_and_same_modified_time() -> Result<()> {
+        let ts = PathDateTime::parse_from_str("2025-03-18T00:10:20", "%Y-%m-%dT%H:%M:%S")?;
+
+        let a = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: ts.clone(),
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+
+        let b = PathTimestamps {
+            path: Path::raw("dummy"),
+            modified: ts.clone(),
+            accessed: PathDateTime::parse_from_str("2025-03-20T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+            created: PathDateTime::parse_from_str("2025-03-18T00:00:00", "%Y-%m-%dT%H:%M:%S")?,
+        };
+
+        assert_eq!(a, b);
+        Ok(())
+    }
 }
