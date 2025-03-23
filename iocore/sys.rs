@@ -211,7 +211,7 @@ fn env_var_user() -> String {
     env_var("USER").unwrap_or_default()
 }
 fn path_owned_expectedly(path: crate::Path, user: &str, uid: u32) -> Result<crate::Path, Error> {
-    if path.node().uid == uid {
+    if path.uid() == uid {
         Ok(path)
     } else {
         Err(Error::SystemError(format!(

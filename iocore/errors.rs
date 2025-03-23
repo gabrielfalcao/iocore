@@ -1,4 +1,4 @@
-use crate::{FileSystemError, FileSystemException};
+use crate::{FileSystemError, FileSystemException, Path, PathType, WalkDirDepth};
 
 /// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
@@ -19,12 +19,12 @@ pub enum Error {
     ChannelError(String),
     PathConversionError(String),
     PathDeserializationError(String),
-    WalkDirInterrupt(String, crate::Node, usize),
-    UnexpectedPathType(crate::Path, crate::PathType),
-    WalkDirError(String, crate::Node),
-    WalkDirInterrupted(String, crate::Node, usize),
-    NondirWalkAttempt(crate::Node),
-    PathDoesNotExist(crate::Path),
+    WalkDirInterrupt(String, Path, WalkDirDepth),
+    UnexpectedPathType(Path, PathType),
+    WalkDirError(String, Path),
+    WalkDirInterrupted(String, Path, WalkDirDepth),
+    NondirWalkAttempt(Path),
+    PathDoesNotExist(Path),
     MalformedFileName(String),
     ThreadGroupError(String),
     ShellCommandError(String),
@@ -47,17 +47,17 @@ impl std::fmt::Display for Error {
             Error::ChannelError(e) => write!(f, "ChannelError: {}", e),
             Error::PathConversionError(e) => write!(f, "PathConversionError: {}", e),
             Error::EnvironmentVarError(s) => write!(f, "EnvironmentVarError: {}", s),
-            Error::WalkDirInterrupt(e, node, depth) => {
-                write!(f, "WalkDirInterrupt {} ({} depth): {}", node, depth, e)
+            Error::WalkDirInterrupt(e, path, depth) => {
+                write!(f, "WalkDirInterrupt {} ({} depth): {}", path, depth, e)
             },
             Error::UnexpectedPathType(path, ptype) => {
                 write!(f, "UnexpectedPathType: {} is not a {}", path, ptype)
             },
-            Error::WalkDirInterrupted(e, node, depth) => {
-                write!(f, "WalkDirInterrupt {} (depth: {:#?}): {}", node, depth, e)
+            Error::WalkDirInterrupted(e, path, depth) => {
+                write!(f, "WalkDirInterrupt {} (depth: {:#?}): {}", path, depth, e)
             },
-            Error::WalkDirError(e, node) => write!(f, "WalkDirError {}: {}", e, node),
-            Error::NondirWalkAttempt(node) => write!(f, "NondirWalkAttempt: {}", node),
+            Error::WalkDirError(e, path) => write!(f, "WalkDirError {}: {}", e, path),
+            Error::NondirWalkAttempt(path) => write!(f, "NondirWalkAttempt: {}", path),
             Error::PathDoesNotExist(path) => write!(f, "PathDoesNotExist: {}", path),
             Error::MalformedFileName(e) => write!(f, "MalformedFileName: {}", e),
             Error::ThreadGroupError(e) => write!(f, "ThreadGroupError: {}", e),
@@ -80,43 +80,43 @@ impl From<FileSystemException> for Error {
     }
 }
 
-impl From<(FileSystemError, crate::Path, String)> for Error {
-    fn from(t3: (FileSystemError, crate::Path, String)) -> Error {
+impl From<(FileSystemError, Path, String)> for Error {
+    fn from(t3: (FileSystemError, Path, String)) -> Error {
         let exc: FileSystemException = t3.into();
         exc.into()
     }
 }
-impl From<(FileSystemError, &crate::Path, String)> for Error {
-    fn from(t3: (FileSystemError, &crate::Path, String)) -> Error {
+impl From<(FileSystemError, &Path, String)> for Error {
+    fn from(t3: (FileSystemError, &Path, String)) -> Error {
         let (e, p, s) = t3;
         let exc: FileSystemException = (e, p.clone(), s).into();
         exc.into()
     }
 }
-impl From<(FileSystemError, crate::Path, &str)> for Error {
-    fn from(t3: (FileSystemError, crate::Path, &str)) -> Error {
+impl From<(FileSystemError, Path, &str)> for Error {
+    fn from(t3: (FileSystemError, Path, &str)) -> Error {
         let (e, p, s) = t3;
         let exc: FileSystemException = (e, p, s.to_string()).into();
         exc.into()
     }
 }
-impl From<(FileSystemError, &crate::Path, &str)> for Error {
-    fn from(t3: (FileSystemError, &crate::Path, &str)) -> Error {
+impl From<(FileSystemError, &Path, &str)> for Error {
+    fn from(t3: (FileSystemError, &Path, &str)) -> Error {
         let (e, p, s) = t3;
         let exc: FileSystemException = (e, p.clone(), s.to_string()).into();
         exc.into()
     }
 }
 
-impl From<(FileSystemError, &crate::Path)> for Error {
-    fn from(t2: (FileSystemError, &crate::Path)) -> Error {
+impl From<(FileSystemError, &Path)> for Error {
+    fn from(t2: (FileSystemError, &Path)) -> Error {
         let (e, p) = t2;
         let exc: FileSystemException = (e, p.clone()).into();
         exc.into()
     }
 }
-impl From<(FileSystemError, crate::Path)> for Error {
-    fn from(t3: (FileSystemError, crate::Path)) -> Error {
+impl From<(FileSystemError, Path)> for Error {
+    fn from(t3: (FileSystemError, Path)) -> Error {
         let (e, p) = t3;
         let exc: FileSystemException = (e, p).into();
         exc.into()

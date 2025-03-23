@@ -34,7 +34,7 @@ impl Hash for Info {
 impl Info {
     pub fn of(path: &crate::fs::Path) -> Info {
         let path = path.clone();
-        let size = path.size().expect(&format!("size of {:#?}", path.to_string()));
+        let size = path.size().unwrap_or_default();
         Info { path, size }
     }
 

@@ -1,18 +1,14 @@
-use std::path::PathBuf;
-
-use iocore::coreio::absolute_path;
 use iocore::errors::Error;
-use iocore::{walk_dir, walk_nodes, NoopProgressHandler, Path};
-use iocore_test::folder_path;
+use iocore::{walk_dir, walk_globs, NoopProgressHandler, Path};
+use iocore_test::{folder_path, path_to_test_file, path_to_test_folder};
 
 #[test]
-fn test_walk_nodes_glob() -> Result<(), Error> {
+fn test_walk_globs_glob() -> Result<(), Error> {
     assert_eq!(
-        walk_nodes(vec![format!("iocore/*.rs")], NoopProgressHandler, None)
-            .unwrap()
+        walk_globs(vec![format!("iocore/*.rs")], NoopProgressHandler, None)?
             .iter()
-            .filter(|entry| !entry.node().filename().starts_with("."))
-            .map(|entry| entry.node().filename())
+            .filter(|entry| !entry.path().name().starts_with("."))
+            .map(|entry| entry.path().name())
             .collect::<Vec<String>>(),
         vec![
             "coreio.rs",
@@ -28,45 +24,33 @@ fn test_walk_nodes_glob() -> Result<(), Error> {
     Ok(())
 }
 #[test]
-fn test_walk_nodes() -> Result<(), Error> {
-    let file_paths = ["tests/noop/1.o", "tests/noop/6.ld", "tests/noop/8.dll", "tests/abba/6.dll"]
+fn test_walk_globs() -> Result<(), Error> {
+    let noop_path = path_to_test_folder!("noop");
+    ["file5", "file8", "file9"].iter().for_each(|filename| {
+        noop_path.join(filename).write_unchecked(&[]);
+    });
+    let pattern = noop_path.join("*").to_string();
+    assert_eq!(noop_path.join("file5").exists(), true);
+    assert_eq!(noop_path.join("file8").is_file(), true);
+    assert_eq!(noop_path.join("file9").is_file(), true);
+    let mut matches = walk_globs(vec![dbg!(pattern)], NoopProgressHandler, None)?
         .iter()
-        .map(|n| Path::writable_file(*n).unwrap())
-        .map(|s| s.write(b"!!!!!!!").unwrap_or(s.clone()))
-        .collect::<Vec<Path>>();
-
-    let absbufs = file_paths
-        .iter()
-        .map(|p| p.try_absolute().to_path_buf())
-        .collect::<Vec<PathBuf>>();
-
-    assert_eq!(
-        absbufs,
-        ["tests/noop/1.o", "tests/noop/6.ld", "tests/noop/8.dll", "tests/abba/6.dll",]
-            .iter()
-            .map(|p| absolute_path(p).unwrap_or(Path::from(p).to_path_buf()))
-            .collect::<Vec<_>>()
-    );
-    let mut matches = walk_nodes(vec![format!("tests/noop/*")], NoopProgressHandler, None)?
-        .iter()
-        .map(|entry| entry.node().filename())
+        .map(|entry| entry.path().name())
         .collect::<Vec<String>>();
     matches.sort();
-    // let matches = file_paths.iter().map(|p|p.name()).collect::<Vec<_>>();
-    assert_eq!(matches, vec!["1.o", "6.ld", "8.dll"]);
+    assert_eq!(matches, vec!["file5", "file8", "file9"]);
     Ok(())
 }
 
 #[test]
 fn test_walk_dir() -> Result<(), Error> {
-    let path = Path::raw("iocore");
+    let path = Path::raw("iocore").canonicalize()?;
     assert_eq!(
-        walk_dir(&path, NoopProgressHandler, None, None)
-            .unwrap()
+        walk_dir(&path, NoopProgressHandler, None, None)?
             .iter()
-            .filter(
-                |entry| !entry.node().filename().starts_with(".") && !entry.path().is_directory()
-            )
+            .filter(|entry| !entry.path().is_directory()
+                && !entry.path().name().starts_with(".")
+                && !entry.path().name().starts_with("#"))
             .map(|entry| entry.path().relative_to(&path).to_string())
             .collect::<Vec<String>>(),
         vec![
@@ -80,16 +64,13 @@ fn test_walk_dir() -> Result<(), Error> {
             "walk.rs",
             "walk/entry.rs",
             "walk/info.rs",
-            "walk/s.rs",
             "walk/t.rs",
-            "walk/v.rs",
             "io/buffer.rs",
             "io/error.rs",
             "io/mod.rs",
             "fs/errors.rs",
             "fs/filename.rs",
-            "fs/ls_node_type.rs",
-            "fs/node.rs",
+            "fs/ls_path_type.rs",
             "fs/opts.rs",
             "fs/path_status.rs",
             "fs/path_timestamps.rs",
@@ -105,14 +86,12 @@ fn test_walk_dir() -> Result<(), Error> {
 
 #[test]
 fn test_walk_dir_fixtures() -> Result<(), Error> {
-    let path = folder_path!("fixtures");
+    let path = folder_path!("fixtures").mkdir_unchecked();
     let entries = walk_dir(&path, NoopProgressHandler, None, None)?;
-    let paths = entries.iter()
+    let paths = entries
+        .iter()
         .map(|entry| entry.path().relative_to(&path).to_string())
         .collect::<Vec<String>>();
-    assert_eq!(
-        paths.len(),
-        146,
-    );
+    assert_eq!(paths.len(), 146);
     Ok(())
 }

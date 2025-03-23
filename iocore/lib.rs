@@ -42,8 +42,7 @@ pub use coreio::{
 pub use env::{args, var};
 pub use errors::{Error, Result};
 pub use fs::errors::{FileSystemError, FileSystemException};
-pub use fs::ls_node_type::LsNodeType;
-pub use fs::node::Node;
+pub use fs::ls_path_type::LsPathType;
 pub use fs::opts::OpenOptions;
 pub use fs::path_status::PathStatus;
 pub use fs::path_timestamps::PathTimestamps;
@@ -67,8 +66,8 @@ pub use sys::{
 };
 pub use walk::entry::Entry;
 pub use walk::info::Info;
-pub use walk::t::{NoopProgressHandler, WalkProgressHandler};
-pub use walk::{glob, read_dir, read_dir_size, walk_dir, walk_nodes};
+pub use walk::t::{NoopProgressHandler, WalkProgressHandler, WalkDirDepth};
+pub use walk::{glob, read_dir, read_dir_size, walk_dir, walk_globs};
 
 lazy_static! {
     pub static ref USER: User = User::id().unwrap_or_default();

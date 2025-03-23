@@ -8,27 +8,21 @@ use crate::errors::Error;
 use crate::fs::cmp_paths_by_parts;
 use crate::{Entry, Info, NoopProgressHandler, Path, PathType, Size, WalkProgressHandler};
 
-pub fn read_dir(
-    path: &Path,
-    handle: impl WalkProgressHandler + Clone,
-) -> Result<Vec<Entry>, Error> {
+pub fn read_dir(path: &Path, handle: impl WalkProgressHandler) -> Result<Vec<Entry>, Error> {
     let mut result = Vec::<Entry>::new();
     let path = path.clone();
 
     let mut entries = std::fs::read_dir(&path.to_path_buf())
         .map_err(|e| match handle.clone().error(&path, e.into()) {
-            Some(y) => Error::WalkDirError(y.to_string(), path.node()),
-            None => Error::WalkDirError("unable to read directory".to_string(), path.node()),
+            Some(y) => Error::WalkDirError(y.to_string(), path.clone()),
+            None => Error::WalkDirError("unable to read directory".to_string(), path.clone()),
         })
         .map(|entries| {
             entries.map(|entry| {
                 entry
                     .map_err(|e| match handle.clone().error(&path, e.into()) {
-                        Some(y) => Error::WalkDirError(y.to_string(), path.node()),
-                        None => Error::WalkDirError(
-                            "unable to read directory".to_string(),
-                            path.node(),
-                        ),
+                        Some(y) => Error::WalkDirError(y.to_string(), path.clone()),
+                        None => Error::WalkDirError("unable to read directory".to_string(), path.clone()),
                     })
                     .map(|entry| Entry::from(Path::from(entry)))
             })
@@ -46,8 +40,18 @@ pub fn read_dir(
     });
     for entry in entries {
         let entry = entry?;
-        if handle.clone().path_matching(&entry.path(), &entry.node()) {
-            result.push(entry);
+        match handle.clone().path_matching(&entry.path()) {
+            Ok(ok) => {
+                if ok {
+                    result.push(entry);
+                }
+            },
+            Err(error) =>
+                return Err(Error::ReadDirError(format!(
+                    "path_matching returned error for path {:#?}: {}",
+                    entry.path(),
+                    error
+                ))),
         }
     }
     result.sort();
@@ -77,7 +81,7 @@ pub fn read_dir_size(path: &Path, progress: &mut impl FnMut(&Path, usize)) -> Re
 
 pub fn walk_dir(
     path: impl Into<Path>,
-    mut handle: impl WalkProgressHandler + Clone,
+    mut handle: impl WalkProgressHandler,
     max_depth: Option<usize>,
     depth: Option<usize>,
 ) -> Result<Vec<Entry>, Error> {
@@ -94,8 +98,6 @@ pub fn walk_dir(
     if !path.exists() {
         if let Some(error) = handle.error(&path, Error::PathDoesNotExist(path.clone())) {
             return Err(error);
-        } else {
-            return Ok(result);
         }
     }
     let path = path.absolute()?;
@@ -133,13 +135,13 @@ pub fn walk_dir(
     Ok(result)
 }
 
-pub fn walk_nodes(
-    filenames: Vec<String>,
-    handle: impl WalkProgressHandler + Clone,
+pub fn walk_globs(
+    globs: Vec<impl std::fmt::Display>,
+    handle: impl WalkProgressHandler,
     max_depth: Option<usize>,
 ) -> Result<Vec<Entry>, Error> {
     let mut result = Vec::<Entry>::new();
-
+    let filenames = globs.iter().map(|pattern|pattern.to_string());
     if filenames.len() == 0 {
         result.extend_from_slice(&walk_dir(&Path::cwd(), handle.clone(), max_depth, None)?)
     } else {

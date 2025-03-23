@@ -1,6 +1,5 @@
 pub mod errors;
-pub mod ls_node_type;
-pub mod node;
+pub mod ls_path_type;
 pub mod opts;
 pub mod path_status;
 pub mod path_timestamps;
@@ -23,7 +22,6 @@ use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
 
-use node::Node;
 use opts::OpenOptions;
 use path_utils::*;
 use perms::PathPermissions;
@@ -136,12 +134,11 @@ impl Path {
     }
 
     pub fn query_type(&self) -> PathType {
-        let node = self.node();
-        if node.is_file {
+        if self.is_file() {
             PathType::File
-        } else if node.is_dir {
+        } else if self.is_dir() {
             PathType::Directory
-        } else if node.is_symlink {
+        } else if self.is_symlink() {
             PathType::Symlink
         } else {
             PathType::None
@@ -218,13 +215,24 @@ impl Path {
     }
 
     pub fn relative_to_cwd(&self) -> Path {
-        self.relative_to(&Path::cwd())
+        let path_canonicalized = self.try_canonicalize().to_string();
+        let cwd_canonicalized = Path::cwd().try_canonicalize().to_string();
+        if path_canonicalized.starts_with(&cwd_canonicalized) {
+            let path_minus_start = repl_beg(
+                &add_trailing_separator(Path::cwd()),
+                &self.try_canonicalize().to_string(),
+                ""
+            );
+            Path::raw(path_minus_start)
+        } else {
+            self.relative_to(&Path::cwd())
+        }
     }
 
     pub fn file(path: impl std::fmt::Display) -> Result<Path, Error> {
-        let path = Path::new(path);
+        let path = Path::new(path).try_canonicalize();
 
-        if path.canonicalize()?.is_file() {
+        if path.is_file() {
             Ok(path)
         } else {
             Err(Error::UnexpectedPathType(path, PathType::File))
@@ -232,8 +240,8 @@ impl Path {
     }
 
     pub fn directory(path: impl std::fmt::Display) -> Result<Path, Error> {
-        let path = Path::new(path);
-        if path.canonicalize()?.is_dir() {
+        let path = Path::new(path).try_canonicalize();
+        if path.is_directory() {
             Ok(path)
         } else {
             Err(Error::UnexpectedPathType(path, PathType::Directory))
@@ -245,7 +253,7 @@ impl Path {
         match path.status() {
             PathStatus::WritableFile => Ok(path),
             PathStatus::None => path
-                .makedirs()
+                .mkdir_parents()
                 .map_err(|e| (FileSystemError::NonWritablePath, path, e.to_string()).into()),
             status => Err((
                 FileSystemError::NonWritablePath,
@@ -270,7 +278,7 @@ impl Path {
         match path.status() {
             PathStatus::WritableDirectory => Ok(path),
             PathStatus::None => path
-                .makedirs()
+                .mkdir_parents()
                 .map_err(|e| (FileSystemError::NonWritablePath, path, e.to_string()).into()),
             status => Err((
                 FileSystemError::NonWritablePath,
@@ -285,7 +293,7 @@ impl Path {
         let path = path.into();
         match path.status() {
             PathStatus::WritableSymlink => Ok(path),
-            PathStatus::None => path.makedirs().map_err(|e| {
+            PathStatus::None => path.mkdir_parents().map_err(|e| {
                 Into::<Error>::into((FileSystemError::NonWritablePath, path, e.to_string()))
             }),
             status => Err((
@@ -297,29 +305,19 @@ impl Path {
         }
     }
 
-    pub fn status(&self) -> PathStatus {
-        match self.node().path_status() {
-            PathStatus::None =>
-                if self.parent_status() == PathStatus::WritableDirectory {
-                    PathStatus::WritableFile
-                } else {
-                    PathStatus::None
-                },
-            status => status,
-        }
-    }
-
     pub fn create(&self) -> Result<File, Error> {
-        let node = self.node();
-        if node.is_writable_file() {
-            self.makedirs()?;
-            match File::create(&self.path()) {
-                Ok(file) => Ok(file),
-                Err(e) => Err((FileSystemError::CreateFile, self, format!("{}", e)).into()),
-            }
-        } else {
-            Err((FileSystemError::CreateFile, self, format!("path exists ({})", self.kind()))
-                .into())
+        match self.status() {
+            PathStatus::WritableFile | PathStatus::None => {
+                if !self.exists() {
+                    self.mkdir_parents()?;
+                }
+                match File::create(&self.path()) {
+                    Ok(file) => Ok(file),
+                    Err(e) => Err((FileSystemError::CreateFile, self, format!("{}", e)).into()),
+                }
+            },
+            _ => Err((FileSystemError::CreateFile, self, format!("path exists ({})", self.kind()))
+                .into()),
         }
     }
 
@@ -334,7 +332,7 @@ impl Path {
     /// assert_eq!(Path::raw("tests/doctest-example").read().unwrap(), "test");
     /// ```
     pub fn write(&self, contents: &[u8]) -> Result<Path, Error> {
-        self.makedirs()?;
+        self.mkdir_parents()?;
         let mut file = self.open(OpenOptions::new().write(true).create(true)).map_err(|e| {
             (FileSystemError::OpenFile, self, format!("Path::write():{} {}", line!(), e))
         })?;
@@ -356,13 +354,11 @@ impl Path {
     }
 
     pub fn append(&self, contents: &[u8]) -> Result<usize, Error> {
-        let node = self.node();
-        let mut file = if node.is_writable_file() {
+        let mut file = if self.is_writable_file() {
             let mut file =
                 self.open(OpenOptions::new().read(true).append(true).write(true).create(true))?;
-            let exists = node.exists();
-
-            if exists {
+            if self.exists() {
+                // seek to the end of file if exists
                 file.seek(SeekFrom::End(0))?;
             }
             file
@@ -370,7 +366,7 @@ impl Path {
             return Err((
                 FileSystemError::AppendFile,
                 self.clone(),
-                format!("not writable {}", node.path_type()),
+                format!("not writable {}", self.path_type()),
             )
                 .into());
         };
@@ -417,7 +413,7 @@ impl Path {
             },
         };
         if create_missing_parents_at_target {
-            to.makedirs()?;
+            to.mkdir_parents()?;
         }
         match std::fs::rename(self.path(), to.path()) {
             Ok(_) => Ok(to),
@@ -430,8 +426,7 @@ impl Path {
     }
 
     pub fn delete(&self) -> Result<Path, Error> {
-        let node = self.node();
-        if node.is_dir {
+        if self.is_directory() {
             for child in self.list()? {
                 match child.delete() {
                     Ok(_) => {},
@@ -445,7 +440,7 @@ impl Path {
                         (FileSystemError::DeleteDirectory, self.clone(), format!("{}", e)).into()
                     ),
             }
-        } else if node.exists() {
+        } else if self.exists() {
             match std::fs::remove_file(self.path()) {
                 Ok(_) => {},
                 Err(e) =>
@@ -497,10 +492,6 @@ impl Path {
 
     pub fn is_absolute(&self) -> bool {
         self.inner_string().starts_with(ROOT_PATH_STR)
-    }
-
-    pub fn is_file(&self) -> bool {
-        self.node().is_file
     }
 
     pub fn is_writable_file(&self) -> bool {
@@ -624,8 +615,15 @@ impl Path {
         Ok(PathTimestamps::from_path(self, &metadata)?)
     }
 
+    pub fn is_file(&self) -> bool {
+        match self.meta() {
+            Ok(meta) => meta.is_file(),
+            Err(_) => false,
+        }
+    }
+
     pub fn is_dir(&self) -> bool {
-        self.node().is_dir
+        self.is_directory()
     }
 
     pub fn is_hidden(&self) -> bool {
@@ -633,19 +631,31 @@ impl Path {
     }
 
     pub fn is_directory(&self) -> bool {
-        self.node().is_dir
+        match self.meta() {
+            Ok(meta) => meta.is_dir(),
+            Err(_) => false,
+        }
     }
 
     pub fn is_symlink(&self) -> bool {
-        self.node().is_symlink
+        match self.meta() {
+            Ok(meta) => meta.is_symlink(),
+            Err(_) => false,
+        }
     }
 
     pub fn exists(&self) -> bool {
-        self.node().exists()
+        match self.meta() {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 
-    pub fn file_size(&self) -> u64 {
-        self.node().size
+    pub fn file_size(&self) -> Size {
+        match self.meta() {
+            Ok(meta) => Size::from(meta.size()),
+            Err(_) => 0.into(),
+        }
     }
 
     pub fn read_lines(&self) -> Result<Vec<String>, Error> {
@@ -738,7 +748,7 @@ impl Path {
         let name = self.name();
         if self.kind() == PathType::Symlink {
             if let Some(ancestor) = self.parent() {
-                Ok(ancestor.absolute().unwrap_or_else(|_| ancestor).join(name))
+                Ok(ancestor.canonicalize().unwrap_or_else(|_| ancestor).join(name))
             } else {
                 Err((
                     FileSystemError::AbsolutePath,
@@ -821,10 +831,6 @@ impl Path {
         }
     }
 
-    pub fn node(&self) -> Node {
-        Node::new(self.to_path_buf())
-    }
-
     pub fn name(&self) -> String {
         match self.path().file_name() {
             Some(ext) => SString::new(ext.as_encoded_bytes()).unchecked_safe(),
@@ -893,13 +899,6 @@ impl Path {
         }
     }
 
-    pub fn parents(&self) -> String {
-        match self.path().parent() {
-            Some(parent) => Path::from(parent).to_string(),
-            None => String::new(),
-        }
-    }
-
     pub fn parent_name(&self) -> String {
         match self.parent() {
             Some(parent) => parent.name(),
@@ -912,15 +911,18 @@ impl Path {
     }
 
     pub fn get_or_create_parent_dir(&self) -> Result<Path, Error> {
-        Ok(self.makedirs()?.parent().unwrap())
+        Ok(self.mkdir_parents()?.parent().unwrap())
     }
 
     pub fn mkdir(&self) -> Result<Path, Error> {
+        if self.is_directory() {
+            return Ok(self.clone());
+        }
         let mut path = self.clone();
-        if !path.exists() || path.is_dir() {
+        if !path.exists() {
             match std::fs::create_dir_all(&path) {
                 Ok(_) => {
-                    path.set_mode(0o0700)?;
+                    path.set_mode(0o0700).map(|_| ()).unwrap_or_default();
                 },
                 Err(e) =>
                     return Err((
@@ -933,24 +935,9 @@ impl Path {
         } else
         // else: folder exists, no problem at all but set permissions to 0700 for cybersecurity's sake
         {
-            path.set_mode(0o0700).map_err(|e| {
-                (FileSystemError::SetMode, &path, format!("Path::mkdir():{} {}", line!(), e))
-            })?;
+            path.set_mode(0o0700).map(|_| ()).unwrap_or_default();
         }
         Ok(path)
-    }
-
-    pub fn makedirs(&self) -> Result<Path, Error> {
-        self.parent()
-            .ok_or_else(|| {
-                Into::<Error>::into((
-                    FileSystemError::CreateDirectory,
-                    self.clone(),
-                    format!("Path::makedirs():{} ain't got no parents", line!()),
-                ))
-            })?
-            .mkdir()?;
-        Ok(self.clone())
     }
 
     pub fn list(&self) -> Result<Vec<Path>, Error> {
@@ -977,6 +964,7 @@ impl Path {
         timestamps.set_modified_time(new_modified_time)?;
         Ok(self.clone())
     }
+
     fn path_metadata(&self) -> Result<std::fs::Metadata, Error> {
         Ok(std::fs::metadata(self.path()).map_err(|error| {
             let io_error = Error::IOError(error.kind()).to_string();
@@ -986,6 +974,119 @@ impl Path {
                 io_error
             ))
         })?)
+    }
+
+    pub fn accessed(&self) -> Option<PathDateTime> {
+        self.timestamps().map(|t| t.accessed).ok()
+    }
+
+    pub fn created(&self) -> Option<PathDateTime> {
+        self.timestamps().map(|t| t.created).ok()
+    }
+
+    pub fn modified(&self) -> Option<PathDateTime> {
+        self.timestamps().map(|t| t.modified).ok()
+    }
+
+    pub fn fs_permissions(&self) -> std::fs::Permissions {
+        std::fs::Permissions::from_mode(self.mode())
+    }
+
+    pub fn status(&self) -> PathStatus {
+        let permissions = self.fs_permissions();
+        let readonly = permissions.readonly();
+
+        match self.path_type() {
+            PathType::Directory =>
+                if readonly {
+                    PathStatus::ReadOnlyDirectory
+                } else {
+                    PathStatus::WritableDirectory
+                },
+            PathType::File =>
+                if readonly {
+                    PathStatus::ReadOnlyFile
+                } else {
+                    PathStatus::WritableFile
+                },
+            PathType::Symlink =>
+                if readonly {
+                    PathStatus::ReadOnlySymlink
+                } else {
+                    PathStatus::WritableSymlink
+                },
+            PathType::Setuid =>
+                if readonly {
+                    PathStatus::ReadOnlySetuid
+                } else {
+                    PathStatus::WritableSetuid
+                },
+            PathType::None => PathStatus::None,
+        }
+    }
+
+    pub fn meta(&self) -> Result<std::fs::Metadata, Error> {
+        let metadata = self.path_metadata().map_err(|error| {
+            Error::FileSystemError(format!(
+                "obtaining std::fs::Metadata of {:#?}: {}",
+                self.to_string(),
+                error
+            ))
+        })?;
+        Ok(metadata)
+    }
+
+    pub fn path_type(&self) -> PathType {
+        match self.meta() {
+            Err(_) => PathType::None,
+            Ok(meta) =>
+                if meta.is_file() {
+                    PathType::File
+                } else if meta.is_dir() {
+                    PathType::Directory
+                } else if meta.is_symlink() {
+                    PathType::Symlink
+                } else {
+                    PathType::None
+                },
+        }
+    }
+
+    pub fn uid(&self) -> u32 {
+        self.meta().expect("Path::uid").uid()
+    }
+
+    pub fn gid(&self) -> u32 {
+        self.meta().expect("Path::gid").gid()
+    }
+
+    pub fn mkdir_parents(&self) -> Result<Path, Error> {
+        match self.parent() {
+            Some(parent) => {
+                parent.mkdir()?;
+            },
+            None => {},
+        }
+        Ok(self.clone())
+    }
+
+    pub fn mkdir_unchecked(&self) -> Path {
+        self.mkdir().map(|_| ()).unwrap_or_default();
+        self.clone()
+    }
+
+    pub fn mkdir_parents_unchecked(&self) -> Path {
+        self.mkdir_parents().map(|_| ()).unwrap_or_default();
+        self.clone()
+    }
+
+    pub fn write_unchecked(&self, contents: &[u8]) -> Path {
+        self.write(contents).map(|_| ()).unwrap_or_default();
+        self.clone()
+    }
+    pub fn delete_unchecked(&self) -> Path {
+        self.delete().map(|_| ()).unwrap_or_default();
+        self.clone()
     }
 }
 impl PartialEq for Path {
@@ -1172,4 +1273,21 @@ pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
     b.is_dir()
         .cmp(&a.is_dir())
         .cmp(&b.split().cmp(&a.split()).cmp(&a.split().len().cmp(&b.split().len())))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Path;
+    #[test]
+    fn test_path_relative_to() {
+        let iocore_fs_path = Path::raw(file!());
+        let iocore_lib_path = Path::raw(file!()).parent().unwrap();
+        assert_eq!(iocore_fs_path.relative_to(&iocore_lib_path).to_string(), "fs.rs");
+        assert_eq!(iocore_lib_path.relative_to(&iocore_fs_path).to_string(), "../");
+    }
+    #[test]
+    fn test_path_relative_to_cwd() {
+        let iocore_fs_path = Path::raw(file!());
+        assert_eq!(iocore_fs_path.relative_to_cwd().to_string(), "iocore/fs.rs");
+    }
 }

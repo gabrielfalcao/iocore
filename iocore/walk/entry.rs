@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Info, Node, Path, PathType, Size};
+use crate::{Info, Path, PathType, Size};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Entry {
@@ -60,10 +60,6 @@ impl Entry {
 
     pub fn path(&self) -> Path {
         self.info().path()
-    }
-
-    pub fn node(&self) -> Node {
-        self.path().node()
     }
 
     pub fn info(&self) -> Info {

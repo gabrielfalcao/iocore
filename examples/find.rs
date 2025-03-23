@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use iocore::{walk_dir, Error, Node, Path, WalkProgressHandler};
+use iocore::{walk_dir, Error, Path, WalkProgressHandler};
 
 fn main() -> Result<(), iocore::Error> {
     let opt = Opt::parse();
@@ -50,18 +50,18 @@ pub struct SimpleMatcher {
 }
 
 impl WalkProgressHandler for SimpleMatcher {
-    fn path_matching(&mut self, path: &Path, _n: &Node) -> bool {
+    fn path_matching(&mut self, path: &Path) -> Result<bool, Error> {
         if self.matches.contains(&path.name()) {
-            false
+            Ok(false)
         } else {
             if path.name() == self.opt.name.clone() {
                 println!("{}", path);
                 self.matches.push(path.name());
-                true
+                Ok(true)
             } else if path.is_dir() {
-                true
+                Ok(true)
             } else {
-                false
+                Ok(false)
             }
         }
     }
