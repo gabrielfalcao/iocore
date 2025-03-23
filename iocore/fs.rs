@@ -1105,39 +1105,6 @@ impl Ord for Path {
     fn cmp(&self, other: &Self) -> Ordering {
         cmp_paths_by_parts(self, other)
     }
-
-    fn max(self, other: Path) -> Path {
-        let self_parts = self.split();
-        let other_parts = other.split();
-        if self_parts.len() > other_parts.len() {
-            self
-        } else {
-            other
-        }
-    }
-
-    fn min(self, other: Path) -> Path {
-        let self_parts = self.split();
-        let other_parts = other.split();
-        if self_parts.len() < other_parts.len() {
-            self
-        } else {
-            other
-        }
-    }
-
-    fn clamp(self, min: Path, max: Path) -> Path {
-        let self_parts = self.split();
-        let min_parts = min.split();
-        let max_parts = max.split();
-        if self_parts.len() > max_parts.len() {
-            max
-        } else if self_parts.len() < min_parts.len() {
-            min
-        } else {
-            self
-        }
-    }
 }
 impl Debug for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
