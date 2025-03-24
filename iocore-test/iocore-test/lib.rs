@@ -14,7 +14,7 @@ pub fn empty_path(
         Some(s) => test_file.with_extension(s.to_string()),
         None => test_file,
     };
-    test_file.mkdir_parents().map(|_| ()).unwrap_or_default();
+    test_file.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
     if test_file.exists() {
         match test_file.delete() {
             Ok(_) => {},
@@ -45,7 +45,7 @@ pub fn seq_bytes(count: usize) -> Vec<u8> {
 macro_rules! path_to_test_file {
     ($name:expr) => {{
         let path = folder_path!().join($crate::test_function_name!()).join($name);
-        path.mkdir_parents().map(|_| ()).unwrap_or_default();
+        path.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
         path.delete().map(|_| ()).unwrap_or_default();
         path
     }};
