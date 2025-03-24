@@ -236,7 +236,7 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
     }
     assert_eq!(
         walk_dir(&path, ErrorOnWalkHandler, None),
-        Err(Error::WalkDirError(format!("PathScanningError: path shall not be scanned"), path.join("walk"), 2)),
+        Err(Error::WalkDirError(format!("PathScanningError: path shall not be scanned"), path.join("walk"), 1)),
     );
     Ok(())
 }

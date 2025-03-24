@@ -3,29 +3,26 @@ use std::cmp::Ordering;
 use crate::Path;
 
 pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
-    b.is_dir().partial_cmp(&a.is_dir()).partial_cmp(
+    let cmp = b.is_dir().partial_cmp(&a.is_dir()).partial_cmp(
         &b.to_string()
             .partial_cmp(&a.to_string())
             .partial_cmp(&a.split().len().partial_cmp(&b.split().len())),
-    )
+    );
+    if let Some(Ordering::Less) = cmp {
+        return cmp;
+    } else if let Some(Ordering::Greater) = cmp {
+        return cmp;
+    } else {
+        Some(fallback_cmp_paths_by_parts(a, b))
+    }
 }
 pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
     let cmp = b
         .is_dir()
         .cmp(&a.is_dir())
         .cmp(&b.to_string().cmp(&a.to_string()).cmp(&a.split().len().cmp(&b.split().len())));
-    if cmp == Ordering::Equal && a != b {
-        if a.split().len() > b.split().len() {
-            Ordering::Greater
-        } else if a.split().len() < b.split().len() {
-            Ordering::Less
-        } else {
-            if a.to_string().len() > b.to_string().len() {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
-        }
+    if cmp == Ordering::Equal {
+        fallback_cmp_paths_by_parts(a, b)
     } else {
         cmp
     }
@@ -98,5 +95,19 @@ pub(crate) fn path_ord_to_string_clamp(current: Path, min: Path, max: Path) -> P
         min
     } else {
         current
+    }
+}
+
+pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
+    if a.split().len() > b.split().len() {
+        Ordering::Greater
+    } else if a.split().len() < b.split().len() {
+        Ordering::Less
+    } else {
+        if a.to_string().len() > b.to_string().len() {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        }
     }
 }

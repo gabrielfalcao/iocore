@@ -2,7 +2,6 @@ pub mod t;
 use thread_groups::ThreadGroup;
 
 use crate::errors::Error;
-use crate::fs::path_cmp::cmp_paths_by_parts;
 use crate::{Path, WalkProgressHandler};
 
 fn iocore_walk_dir(
@@ -13,7 +12,7 @@ fn iocore_walk_dir(
 ) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
     let max_depth = max_depth.unwrap_or(usize::MAX);
-    let depth = depth.unwrap_or(1) + 1;
+    let depth = depth.unwrap_or(0) + 1;
     if !path.exists() {
         return Err(Error::WalkDirError(
             format!("{:#?} does not exist", path.to_string()),
@@ -90,7 +89,9 @@ fn iocore_walk_dir(
             result.push(path);
         }
     }
-    result.sort_by(|a, b| cmp_paths_by_parts(&a, &b));
+    if depth <= 1 {
+        result.sort();
+    }
     Ok(result)
 }
 /// `walk_dir` traverses the directory referenced in the `path`
@@ -101,7 +102,7 @@ fn iocore_walk_dir(
 /// gracefully.
 pub fn walk_dir(
     path: impl Into<Path>,
-    handler: impl  WalkProgressHandler,
+    handler: impl WalkProgressHandler,
     max_depth: Option<usize>,
 ) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
@@ -128,7 +129,9 @@ pub fn walk_globs(
             }
         }
     }
-    result.sort();
+    if result.len() >= 2 {
+        result.sort();
+    }
     Ok(result)
 }
 

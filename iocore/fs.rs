@@ -957,7 +957,9 @@ impl Path {
             .map(|dir_entry| dir_entry.unwrap())
             .map(|dir_entry| Path::from(dir_entry))
             .collect();
-        paths.sort();
+        if paths.len() >= 2 {
+            paths.sort();
+        }
         Ok(paths)
     }
 
