@@ -89,9 +89,6 @@ fn iocore_walk_dir(
             result.push(path);
         }
     }
-    if depth <= 1 {
-        result.sort();
-    }
     Ok(result)
 }
 /// `walk_dir` traverses the directory referenced in the `path`
