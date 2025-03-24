@@ -18,10 +18,9 @@
 //!⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿
 //!⣿⣿⣿⣿⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿⣿
 //!⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⣤⣤⣤⣴⣶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-//!//!```
+//!```
 //!
 //!
-//![![Continuous Integration](https://github.com/gabrielfalcao/iocore/actions/workflows/ci.yml/badge.svg)](https://github.com/gabrielfalcao/iocore/actions/workflows/ci.yml)
 #![cfg(target_family = "unix")]
 #[macro_use]
 extern crate lazy_static;
