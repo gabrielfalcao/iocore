@@ -1,10 +1,10 @@
 [package]
 name = "iocore-test"
-version = "0.1000.0"
-edition = "2021"
+version = "0.1010.0"
+edition = "2024"
 autoexamples = false
 autobenches = false
-description = "companion testing library for the iocore crate"
+description = "companion testing library of the crate 'iocore'"
 documentation = "https://docs.rs/iocore-test"
 readme = "README.md"
 homepage = "https://github.com/gabrielfalcao/iocore"
