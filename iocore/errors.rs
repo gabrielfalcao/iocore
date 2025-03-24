@@ -21,9 +21,9 @@ pub enum Error {
     PathDeserializationError(String),
     WalkDirInterrupt(String, Path, WalkDirDepth),
     UnexpectedPathType(Path, PathType),
-    WalkDirError(String, Path),
+    WalkDirError(String, Path, WalkDirDepth),
     WalkDirInterrupted(String, Path, WalkDirDepth),
-    NondirWalkAttempt(Path),
+    PathScanningError(String),
     PathDoesNotExist(Path),
     MalformedFileName(String),
     ThreadGroupError(String),
@@ -56,8 +56,8 @@ impl std::fmt::Display for Error {
             Error::WalkDirInterrupted(e, path, depth) => {
                 write!(f, "WalkDirInterrupt {} (depth: {:#?}): {}", path, depth, e)
             },
-            Error::WalkDirError(e, path) => write!(f, "WalkDirError {}: {}", e, path),
-            Error::NondirWalkAttempt(path) => write!(f, "NondirWalkAttempt: {}", path),
+            Error::WalkDirError(e, path, depth) => write!(f, "WalkDirError {}(depth={}): {}", path, depth, e),
+            Error::PathScanningError(path) => write!(f, "PathScanningError: {}", path),
             Error::PathDoesNotExist(path) => write!(f, "PathDoesNotExist: {}", path),
             Error::MalformedFileName(e) => write!(f, "MalformedFileName: {}", e),
             Error::ThreadGroupError(e) => write!(f, "ThreadGroupError: {}", e),

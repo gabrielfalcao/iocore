@@ -73,12 +73,9 @@ pub fn remove_equal_prefix_from_path_strings(path: &str, path2: &str) -> (String
     let path_result = if path_end == path { String::new() } else { path_end.to_string() };
     let path2_result = if path2_end == path2 { String::new() } else { path2_end.to_string() };
 
-    // dbg!(&path, &path2);
-    // dbg!(&tmp);
-    // dbg!(&path_end, &path2_end);
     (path_result, path2_result)
 }
-// `iocore::fs::path_utils::remove_absolute_path` uses `Path::cwd` to form the absolute path of the given path
+
 pub fn remove_absolute_path(path: &Path) -> Path {
     if path.is_absolute() {
         return path.clone();
@@ -87,6 +84,5 @@ pub fn remove_absolute_path(path: &Path) -> Path {
     let absolute_path = cwd.join(path);
     let absolute_path_string = absolute_path.to_string();
     let absolute_part = absolute_path_string.replace(&path.to_string(), "");
-    // dbg!(&absolute_path, &absolute_path_string, &absolute_part);
     return Path::raw(absolute_path_string.replace(&add_trailing_separator(&absolute_part), ""));
 }

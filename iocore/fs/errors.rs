@@ -355,28 +355,3 @@ impl std::fmt::Display for FileSystemException {
 }
 
 impl std::error::Error for FileSystemException {}
-
-// #[derive(Debug, Clone)]
-// pub enum PrintableError {
-//     BuiltinIOError(Box<&'e std::io::Error>),
-//     String(&'e str),
-// }
-
-// impl From<&std::io::Error> for PrintableError {
-//     fn from(p: &std::io::Error) -> PrintableError {
-//         PrintableError::BuiltinIOError::(Box::new(p))
-//     }
-// }
-// impl std::fmt::Display for PrintableError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         match self {
-//             PrintableError::BuiltinIOError(p) => write!(f, "{}", p),
-//             PrintableError::String(s) => write!(f, "{}", s),
-//         }
-//     }
-// }
-// impl From<&str> for PrintableError {
-//     fn from(s: &str) -> PrintableError {
-//         PrintableError::String(s)
-//     }
-// }

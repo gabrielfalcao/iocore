@@ -5,7 +5,7 @@ fn main() -> Result<(), iocore::Error> {
     let opt = Opt::parse();
     let matcher = opt.matcher();
 
-    walk_dir(&Path::from(&opt.origin), matcher, opt.max_depth, None)?;
+    walk_dir(&Path::from(&opt.origin), matcher, opt.max_depth)?;
     Ok(())
 }
 
