@@ -1,10 +1,11 @@
 pub mod errors;
 pub mod ls_path_type;
 pub mod opts;
+pub(crate) mod path_cmp;
 pub mod path_status;
 pub mod path_timestamps;
 pub mod path_type;
-pub mod path_utils;
+pub(crate) mod path_utils;
 pub mod perms;
 pub mod size;
 pub mod timed;
@@ -23,7 +24,14 @@ use std::str::FromStr;
 use std::string::ToString;
 
 use opts::OpenOptions;
-use path_utils::*;
+use path_cmp::{
+    cmp_paths_by_parts, partial_cmp_paths_by_parts, path_ord_split_clamp, path_ord_split_max,
+    path_ord_split_min,
+};
+use path_utils::{
+    add_trailing_separator, expand_home_regex, path_str_to_relative_subpath,
+    remove_duplicate_separators, remove_start, remove_trailing_slash, repl_beg,
+};
 use perms::PathPermissions;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
@@ -221,7 +229,7 @@ impl Path {
             let path_minus_start = repl_beg(
                 &add_trailing_separator(Path::cwd()),
                 &self.try_canonicalize().to_string(),
-                ""
+                "",
             );
             Path::raw(path_minus_start)
         } else {
@@ -1084,6 +1092,7 @@ impl Path {
         self.write(contents).map(|_| ()).unwrap_or_default();
         self.clone()
     }
+
     pub fn delete_unchecked(&self) -> Path {
         self.delete().map(|_| ()).unwrap_or_default();
         self.clone()
@@ -1104,6 +1113,18 @@ impl PartialOrd for Path {
 impl Ord for Path {
     fn cmp(&self, other: &Self) -> Ordering {
         cmp_paths_by_parts(self, other)
+    }
+
+    fn max(self, other: Path) -> Path {
+        path_ord_split_max(self, other)
+    }
+
+    fn min(self, other: Path) -> Path {
+        path_ord_split_min(self, other)
+    }
+
+    fn clamp(self, min: Path, max: Path) -> Path {
+        path_ord_split_clamp(self, min, max)
     }
 }
 impl Debug for Path {
@@ -1229,17 +1250,6 @@ impl From<&std::path::Path> for Path {
     fn from(path: &std::path::Path) -> Path {
         Path::from_std_path(path)
     }
-}
-
-pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
-    b.is_dir()
-        .partial_cmp(&a.is_dir())
-        .partial_cmp(&b.split().len().partial_cmp(&a.split().len()))
-}
-pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
-    b.is_dir()
-        .cmp(&a.is_dir())
-        .cmp(&b.split().cmp(&a.split()).cmp(&a.split().len().cmp(&b.split().len())))
 }
 
 #[cfg(test)]
