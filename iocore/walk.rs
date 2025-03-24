@@ -1,4 +1,6 @@
 pub mod t;
+use std::collections::HashSet;
+
 use thread_groups::ThreadGroup;
 
 use crate::errors::Error;
@@ -9,7 +11,7 @@ fn iocore_walk_dir(
     mut handler: impl WalkProgressHandler,
     max_depth: Option<usize>,
     depth: Option<usize>,
-) -> Result<Vec<Path>, Error> {
+) -> Result<HashSet<Path>, Error> {
     let path = Into::<Path>::into(path);
     let max_depth = max_depth.unwrap_or(usize::MAX);
     let depth = depth.unwrap_or(0) + 1;
@@ -27,8 +29,8 @@ fn iocore_walk_dir(
             depth,
         ));
     }
-    let mut result = Vec::<Path>::new();
-    let mut threads: ThreadGroup<Result<Vec<Path>, Error>> =
+    let mut result = HashSet::<Path>::new();
+    let mut threads: ThreadGroup<Result<HashSet<Path>, Error>> =
         ThreadGroup::with_id(format!("walk_dir:{}", path));
 
     if depth > max_depth {
@@ -68,7 +70,7 @@ fn iocore_walk_dir(
         match handler.path_matching(&path.clone()) {
             Ok(should_aggregate_result) =>
                 if should_aggregate_result {
-                    result.push(path);
+                    result.insert(path);
                 },
             Err(error) => match handler.error(&path, error) {
                 Some(error) => {
@@ -85,8 +87,19 @@ fn iocore_walk_dir(
         .map(|path| path.clone().unwrap())
         .flatten()
     {
-        for path in paths {
-            result.push(path);
+        for path in paths.iter() {
+            match handler.path_matching(path) {
+                Ok(should_aggregate_result) =>
+                    if should_aggregate_result {
+                        result.insert(path.clone());
+                    },
+                Err(error) => match handler.error(path, error) {
+                    Some(error) => {
+                        return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
+                    },
+                    None => {},
+                },
+            }
         }
     }
     Ok(result)
@@ -103,7 +116,13 @@ pub fn walk_dir(
     max_depth: Option<usize>,
 ) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
-    Ok(iocore_walk_dir(&path, handler, max_depth, None)?)
+    let mut result = Vec::<Path>::from_iter(
+        iocore_walk_dir(&path, handler, max_depth, None)?
+            .iter()
+            .map(|path| path.clone()),
+    );
+    result.sort();
+    Ok(result)
 }
 
 pub fn walk_globs(

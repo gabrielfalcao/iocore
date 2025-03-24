@@ -8,12 +8,9 @@ pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering>
             .partial_cmp(&a.to_string())
             .partial_cmp(&a.split().len().partial_cmp(&b.split().len())),
     );
-    if let Some(Ordering::Less) = cmp {
-        return cmp;
-    } else if let Some(Ordering::Greater) = cmp {
-        return cmp;
-    } else {
-        Some(fallback_cmp_paths_by_parts(a, b))
+    match cmp {
+        Some(Ordering::Less) | Some(Ordering::Greater) => cmp,
+        _ => Some(fallback_cmp_paths_by_parts(a, b)),
     }
 }
 pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
@@ -99,7 +96,7 @@ pub(crate) fn path_ord_to_string_clamp(current: Path, min: Path, max: Path) -> P
 }
 
 pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
-    if a.split().len() > b.split().len() {
+    let ordering = if a.split().len() > b.split().len() {
         Ordering::Greater
     } else if a.split().len() < b.split().len() {
         Ordering::Less
@@ -109,5 +106,6 @@ pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
         } else {
             Ordering::Less
         }
-    }
+    };
+    ordering
 }
