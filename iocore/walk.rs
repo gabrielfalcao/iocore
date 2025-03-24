@@ -1,137 +1,64 @@
-pub mod entry;
-pub mod info;
 pub mod t;
-
 use thread_groups::ThreadGroup;
 
 use crate::errors::Error;
-use crate::fs::cmp_paths_by_parts;
-use crate::{Entry, Info, NoopProgressHandler, Path, PathType, Size, WalkProgressHandler};
-
-pub fn read_dir(path: &Path, handle: impl WalkProgressHandler) -> Result<Vec<Entry>, Error> {
-    let mut result = Vec::<Entry>::new();
-    let path = path.clone();
-
-    let mut entries = std::fs::read_dir(&path.to_path_buf())
-        .map_err(|e| match handle.clone().error(&path, e.into()) {
-            Some(y) => Error::WalkDirError(y.to_string(), path.clone()),
-            None => Error::WalkDirError("unable to read directory".to_string(), path.clone()),
-        })
-        .map(|entries| {
-            entries.map(|entry| {
-                entry
-                    .map_err(|e| match handle.clone().error(&path, e.into()) {
-                        Some(y) => Error::WalkDirError(y.to_string(), path.clone()),
-                        None => Error::WalkDirError("unable to read directory".to_string(), path.clone()),
-                    })
-                    .map(|entry| Entry::from(Path::from(entry)))
-            })
-        })?
-        .collect::<Vec<Result<Entry, Error>>>();
-
-    entries.sort_by(|a, b| {
-        if a.is_ok() && b.is_ok() {
-            let a = a.clone().unwrap();
-            let b = b.clone().unwrap();
-            cmp_paths_by_parts(&a.path(), &b.path())
-        } else {
-            a.is_ok().cmp(&b.is_ok())
-        }
-    });
-    for entry in entries {
-        let entry = entry?;
-        match handle.clone().path_matching(&entry.path()) {
-            Ok(ok) => {
-                if ok {
-                    result.push(entry);
-                }
-            },
-            Err(error) =>
-                return Err(Error::ReadDirError(format!(
-                    "path_matching returned error for path {:#?}: {}",
-                    entry.path(),
-                    error
-                ))),
-        }
-    }
-    result.sort();
-    Ok(result)
-}
-
-pub fn read_dir_size(path: &Path, progress: &mut impl FnMut(&Path, usize)) -> Result<Size, Error> {
-    let info = Info::of(path);
-    let mut size = info.size();
-    let paths = read_dir(path, NoopProgressHandler)?;
-    let count = paths.len();
-    progress(path, count);
-    size += paths
-        .iter()
-        .map(|entry| {
-            progress(&entry.path(), count);
-            if let Entry::Directory(d) = entry {
-                read_dir_size(&d.path(), progress).unwrap_or(entry.size())
-            } else {
-                entry.size()
-            }
-        })
-        .sum();
-
-    Ok(size)
-}
+use crate::fs::path_cmp::cmp_paths_by_parts;
+use crate::{Path, WalkProgressHandler};
 
 pub fn walk_dir(
     path: impl Into<Path>,
-    mut handle: impl WalkProgressHandler,
+    mut handler: impl WalkProgressHandler,
     max_depth: Option<usize>,
     depth: Option<usize>,
-) -> Result<Vec<Entry>, Error> {
+) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
+    if !path.exists() {
+        return Err(Error::WalkDirError(format!("{:#?} does not exist", path.to_string()), path));
+    }
+    if !path.is_directory() {
+        return Err(Error::WalkDirError(
+            format!("{:#?} is not a directory", path.to_string()),
+            path,
+        ));
+    }
     let max_depth = max_depth.unwrap_or(u8::MAX as usize);
     let depth = depth.unwrap_or(0) + 1;
-    let mut result = Vec::<Entry>::new();
-    let mut threads: ThreadGroup<Result<Vec<Entry>, Error>> =
+    let mut result = Vec::<Path>::new();
+    let mut threads: ThreadGroup<Result<Vec<Path>, Error>> =
         ThreadGroup::with_id(format!("walk_dir:{}", path));
 
     if depth - 1 > max_depth {
         return Ok(result);
     }
     if !path.exists() {
-        if let Some(error) = handle.error(&path, Error::PathDoesNotExist(path.clone())) {
+        if let Some(error) = handler.error(&path, Error::PathDoesNotExist(path.clone())) {
             return Err(error);
         }
     }
     let path = path.absolute()?;
-    for entry in read_dir(&path, handle.clone())? {
-        let path = entry.path();
-        if path.is_dir() {
-            let handle = handle.clone();
-            result.push(Entry::from(Info::of(&path)));
+    for path in path.list()? {
+        if path.is_directory() {
+            let handler = handler.clone();
+            result.push(path.clone());
             threads.spawn(move || {
-                walk_dir(&path, handle, Some(max_depth.clone()), Some(depth.clone()))
+                walk_dir(&path, handler, Some(max_depth.clone()), Some(depth.clone()))
             })?;
         } else {
-            result.push(Entry::from(Info::of(&path)));
+            result.push(path);
         }
     }
-    for entries in threads
+    for paths in threads
         .results()
         .iter()
-        .filter(|o| o.is_ok())
-        .map(|o| o.clone().unwrap())
+        .filter(|path| path.is_ok())
+        .map(|path| path.clone().unwrap())
         .flatten()
     {
-        for mut entry in entries {
-            if let Entry::Directory(info) = entry.clone() {
-                let subentries =
-                    walk_dir(&info.path(), handle.clone(), Some(max_depth), Some(depth + 1))?;
-                entry.increment_size(subentries.iter().map(|s| s.size()).sum());
-                result.push(entry);
-            } else {
-                result.push(entry);
-            }
+        for path in paths {
+            result.push(path);
         }
     }
-    result.sort();
+    result.sort_by(|a, b| cmp_paths_by_parts(&a, &b));
     Ok(result)
 }
 
@@ -139,26 +66,18 @@ pub fn walk_globs(
     globs: Vec<impl std::fmt::Display>,
     handle: impl WalkProgressHandler,
     max_depth: Option<usize>,
-) -> Result<Vec<Entry>, Error> {
-    let mut result = Vec::<Entry>::new();
-    let filenames = globs.iter().map(|pattern|pattern.to_string());
+) -> Result<Vec<Path>, Error> {
+    let mut result = Vec::<Path>::new();
+    let filenames = globs.iter().map(|pattern| pattern.to_string());
     if filenames.len() == 0 {
         result.extend_from_slice(&walk_dir(&Path::cwd(), handle.clone(), max_depth, None)?)
     } else {
         for pattern in filenames {
             for path in glob(pattern)? {
-                match path.kind() {
-                    PathType::Directory => {
-                        result.extend_from_slice(&walk_dir(
-                            &path,
-                            handle.clone(),
-                            max_depth,
-                            None,
-                        )?);
-                    },
-                    _ => {
-                        result.push(Entry::from(path));
-                    },
+                if path.is_directory() {
+                    result.extend_from_slice(&walk_dir(&path, handle.clone(), max_depth, None)?);
+                } else {
+                    result.push(path);
                 }
             }
         }
@@ -178,7 +97,7 @@ pub fn glob(pattern: impl Into<String>) -> Result<Vec<Path>, Error> {
             Ok(filename) => Path::from(filename),
             Err(e) => return Err(Error::FileSystemError(format!("{}: {}", pattern, e))),
         };
-        result.push(path.absolute()?);
+        result.push(path);
     }
     Ok(result)
 }

@@ -100,6 +100,11 @@ macro_rules! test_function_name {
 /// `path_to_test_file` returns the path to a test directory as the test file
 #[macro_export]
 macro_rules! path_to_test_folder {
+    () => {{
+        let path = folder_path!($crate::test_function_name!());
+        path.mkdir_unchecked();
+        path
+    }};
     ($name:expr) => {{
         let path = path_to_test_file!($name);
         path.mkdir_unchecked();

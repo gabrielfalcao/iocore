@@ -64,10 +64,8 @@ pub use sys::{
     best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
     safe_string, Group, User,
 };
-pub use walk::entry::Entry;
-pub use walk::info::Info;
-pub use walk::t::{NoopProgressHandler, WalkProgressHandler, WalkDirDepth};
-pub use walk::{glob, read_dir, read_dir_size, walk_dir, walk_globs};
+pub use walk::t::{NoopProgressHandler, WalkDirDepth, WalkProgressHandler};
+pub use walk::{glob, walk_dir, walk_globs};
 
 lazy_static! {
     pub static ref USER: User = User::id().unwrap_or_default();
