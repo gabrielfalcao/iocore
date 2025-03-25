@@ -1,6 +1,6 @@
 [package]
 name = "iocore"
-version = "0.1010.0"
+version = "0.1011.0"
 edition = "2024"
 description = "I/O Core Utilities"
 documentation = "https://docs.rs/iocore"
