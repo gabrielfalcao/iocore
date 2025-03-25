@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use thread_groups::ThreadGroup;
 
 use crate::{Error, Path};
-pub type Matcher = fn(&Path) -> bool;
-pub type ErrorHandler = fn(&Path, Error) -> Option<Error>;
+
 pub type MaxDepth = usize;
 pub type Depth = usize;
 

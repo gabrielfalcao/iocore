@@ -66,10 +66,6 @@ fn open(path: Path, file: &OpenOptions) -> Result<std::fs::File, Error> {
     }
 }
 
-pub fn open_write(target: &str) -> Result<std::fs::File, Error> {
-    open(Path::from(target), OpenOptions::new().create(true).write(true).mode(0o0600))
-}
-
 pub fn open_append(target: &str) -> Result<std::fs::File, Error> {
     open(
         Path::from(target),

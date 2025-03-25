@@ -41,8 +41,6 @@ impl Display for PathType {
         write!(f, "{}", self.to_str())
     }
 }
-pub trait ToPathType: std::fmt::Display {}
-impl<T> ToPathType for T where T: Into<PathType> + std::fmt::Display {}
 
 impl Into<String> for PathType {
     fn into(self) -> String {
