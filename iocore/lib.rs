@@ -38,11 +38,12 @@ pub use coreio::{
     get_or_create_parent_dir, open_append, open_read, read_file, read_file_bytes, resolved_path,
     write_file,
 };
-pub use env::{args, var};
+pub use env::{args, args_from_string, var};
 pub use errors::{Error, Result};
 pub use fs::errors::{FileSystemError, FileSystemException};
 pub use fs::ls_path_type::LsPathType;
 pub use fs::opts::OpenOptions;
+pub use fs::path_datetime::PathDateTime;
 pub use fs::path_status::PathStatus;
 pub use fs::path_timestamps::PathTimestamps;
 pub use fs::path_type::PathType;
@@ -54,7 +55,6 @@ pub use fs::path_utils::{
 };
 pub use fs::perms::PathPermissions;
 pub use fs::size::{ByteUnit, Size};
-pub use fs::timed::PathDateTime;
 pub use fs::Path;
 pub use io::buffer::FileBuffer;
 pub use io::error::Code;

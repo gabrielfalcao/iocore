@@ -2,13 +2,13 @@ pub(crate) mod errors;
 pub(crate) mod ls_path_type;
 pub(crate) mod opts;
 pub(crate) mod path_cmp;
+pub(crate) mod path_datetime;
 pub(crate) mod path_status;
 pub(crate) mod path_timestamps;
 pub(crate) mod path_type;
 pub(crate) mod path_utils;
 pub(crate) mod perms;
 pub(crate) mod size;
-pub(crate) mod timed;
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -28,6 +28,7 @@ use path_cmp::{
     cmp_paths_by_parts, partial_cmp_paths_by_parts, path_ord_split_clamp, path_ord_split_max,
     path_ord_split_min,
 };
+use path_datetime::PathDateTime;
 use path_utils::{
     add_trailing_separator, expand_home_regex, path_str_to_relative_subpath,
     remove_duplicate_separators, remove_start, remove_trailing_slash, repl_beg,
@@ -36,7 +37,6 @@ use perms::PathPermissions;
 use sanitation::SString;
 use serde::{Deserialize, Serialize};
 use size::Size;
-use timed::PathDateTime;
 
 use crate::errors::Error;
 use crate::{FileSystemError, PathStatus, PathTimestamps, PathType};

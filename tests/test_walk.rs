@@ -1,5 +1,5 @@
 use iocore::{glob, walk_dir, walk_globs, Error, NoopProgressHandler, Path, WalkProgressHandler};
-use iocore_test::{folder_path, path_to_test_folder};
+use iocore_test::path_to_test_folder;
 
 #[test]
 fn test_walk_globs_lib_folder() -> Result<(), Error> {
@@ -96,13 +96,13 @@ fn test_walk_dir() -> Result<(), Error> {
             "fs/ls_path_type.rs",
             "fs/opts.rs",
             "fs/path_cmp.rs",
+            "fs/path_datetime.rs",
             "fs/path_status.rs",
             "fs/path_timestamps.rs",
             "fs/path_type.rs",
             "fs/path_utils.rs",
             "fs/perms.rs",
             "fs/size.rs",
-            "fs/timed.rs",
             "io/buffer.rs",
             "io/error.rs",
             "io/mod.rs",
@@ -151,13 +151,13 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
             "fs/ls_path_type.rs",
             "fs/opts.rs",
             "fs/path_cmp.rs",
+            "fs/path_datetime.rs",
             "fs/path_status.rs",
             "fs/path_timestamps.rs",
             "fs/path_type.rs",
             "fs/path_utils.rs",
             "fs/perms.rs",
             "fs/size.rs",
-            "fs/timed.rs",
             "io/buffer.rs",
             "io/error.rs",
             "io/mod.rs",
@@ -201,13 +201,13 @@ fn test_walk_dir_skip_scanning_specific_directories() -> Result<(), Error> {
             "fs/ls_path_type.rs",
             "fs/opts.rs",
             "fs/path_cmp.rs",
+            "fs/path_datetime.rs",
             "fs/path_status.rs",
             "fs/path_timestamps.rs",
             "fs/path_type.rs",
             "fs/path_utils.rs",
             "fs/perms.rs",
             "fs/size.rs",
-            "fs/timed.rs",
         ]
     );
     Ok(())

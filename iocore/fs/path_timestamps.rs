@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
-use crate::fs::timed::PathDateTime;
+use crate::fs::path_datetime::PathDateTime;
 use crate::{path_datetime_from_metadata_field, Path};
 /// `PathTimestamps`
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -108,7 +108,7 @@ impl std::fmt::Debug for PathTimestamps {
 #[macro_export]
 macro_rules! path_datetime_from_metadata_field {
     ($field:ident, $metadata:ident, $path:ident $(,)?) => {
-        Into::<$crate::fs::timed::PathDateTime>::into($metadata.$field().map_err(|error| {
+        Into::<$crate::fs::path_datetime::PathDateTime>::into($metadata.$field().map_err(|error| {
             let io_error = Error::IOError(error.kind()).to_string();
             Error::FileSystemError(format!(
                 "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
