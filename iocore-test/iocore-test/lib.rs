@@ -44,7 +44,7 @@ pub fn seq_bytes(count: usize) -> Vec<u8> {
 #[macro_export]
 macro_rules! path_to_test_file {
     ($name:expr) => {{
-        let path = folder_path!().join($crate::test_function_name!()).join($name);
+        let path = $crate::folder_path!().join($crate::test_function_name!()).join($name);
         path.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
         path.delete().map(|_| ()).unwrap_or_default();
         path
@@ -64,7 +64,7 @@ macro_rules! folder_path {
         path
     }};
     ($name:expr) => {{
-        let path = folder_path!();
+        let path = $crate::folder_path!();
         let path = path.join($name);
         path.mkdir_unchecked();
         path
@@ -101,12 +101,12 @@ macro_rules! test_function_name {
 #[macro_export]
 macro_rules! path_to_test_folder {
     () => {{
-        let path = folder_path!($crate::test_function_name!());
+        let path = $crate::folder_path!($crate::test_function_name!());
         path.mkdir_unchecked();
         path
     }};
     ($name:expr) => {{
-        let path = path_to_test_file!($name);
+        let path = $crate::path_to_test_file!($name);
         path.mkdir_unchecked();
         path
     }};

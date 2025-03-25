@@ -94,7 +94,11 @@ pub(crate) fn path_ord_to_string_clamp(current: Path, min: Path, max: Path) -> P
         current
     }
 }
-
+/// `fallback_cmp_paths_by_parts` provides a way to further order two
+/// paths when previous attempts at ordering them yields
+/// [`std::cmp::Ordering::Equal`].
+///
+/// In other words, this function is a clear attempt at achieving "total order"
 pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
     let ordering = if a.split().len() > b.split().len() {
         Ordering::Greater
@@ -108,4 +112,62 @@ pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
         }
     };
     ordering
+}
+
+
+#[cfg(test)]
+mod test_very_specific_ordering {
+    use crate::Path;
+    #[test]
+    fn test_paths_should_be_ordered_alphabetically() {
+        let mut paths = vec![
+            Path::raw("zzzzz"),
+            Path::raw("mmmmm"),
+            Path::raw("nnnnn"),
+            Path::raw("aaaaa"),
+        ];
+        paths.sort();
+        assert_eq!(paths, vec![
+            Path::raw("aaaaa"),
+            Path::raw("mmmmm"),
+            Path::raw("nnnnn"),
+            Path::raw("zzzzz"),
+        ]);
+    }
+    #[test]
+    fn but_paths_should_be_ordered_by_length() {
+        let mut paths = vec![
+            Path::raw("mmmmm"),
+            Path::raw("mmm"),
+            Path::raw("aaa"),
+            Path::raw("aaaa"),
+        ];
+        paths.sort();
+        assert_eq!(paths, vec![
+            Path::raw("aaa"),
+            Path::raw("aaaa"),
+            Path::raw("mmm"),
+            Path::raw("mmmmm"),
+        ]);
+    }
+    #[test]
+    fn but_paths_should_be_ordered_by_depth_of_folders() {
+        let mut paths = vec![
+            Path::raw("abcdefg"),
+            Path::raw("nopqrst"),
+            Path::raw("a/bcdefg"),
+            Path::raw("no/pqrst"),
+            Path::raw("u/v/w/x/y"),
+            Path::raw("uv/wx/y"),
+        ];
+        paths.sort();
+        assert_eq!(paths, vec![
+            Path::raw("abcdefg"),
+            Path::raw("nopqrst"),
+            Path::raw("a/bcdefg"),
+            Path::raw("no/pqrst"),
+            Path::raw("uv/wx/y"),
+            Path::raw("u/v/w/x/y"),
+        ]);
+    }
 }

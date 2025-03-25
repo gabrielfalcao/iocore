@@ -1264,6 +1264,7 @@ mod tests {
         assert_eq!(iocore_fs_path.relative_to(&iocore_lib_path).to_string(), "fs.rs");
         assert_eq!(iocore_lib_path.relative_to(&iocore_fs_path).to_string(), "../");
     }
+
     #[test]
     fn test_path_relative_to_cwd() {
         let iocore_fs_path = Path::raw(file!());
