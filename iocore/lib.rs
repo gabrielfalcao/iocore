@@ -24,14 +24,14 @@
 #![cfg(target_family = "unix")]
 #[macro_use]
 extern crate lazy_static;
-pub mod coreio;
-pub mod env;
-pub mod errors;
-pub mod fs;
-pub mod io;
-pub mod sh;
-pub mod sys;
-pub mod walk;
+pub(crate) mod coreio;
+pub(crate) mod env;
+pub(crate) mod errors;
+pub(crate) mod fs;
+pub(crate) mod io;
+pub(crate) mod sh;
+pub(crate) mod sys;
+pub(crate) mod walk;
 
 pub use coreio::{
     absolute_path, absolutely_current_path, canonical_path, ensure_dir_exists, expand_path,
@@ -63,8 +63,9 @@ pub use sys::{
     best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
     safe_string, Group, User,
 };
-pub use walk::t::{NoopProgressHandler, WalkDirDepth, WalkProgressHandler};
-pub use walk::{glob, walk_dir, walk_globs};
+pub use walk::{
+    glob, walk_dir, walk_globs, NoopProgressHandler, WalkDirDepth, WalkProgressHandler,
+};
 
 lazy_static! {
     pub static ref USER: User = User::id().unwrap_or_default();

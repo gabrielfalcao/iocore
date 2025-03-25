@@ -1,14 +1,14 @@
-pub mod errors;
-pub mod ls_path_type;
-pub mod opts;
+pub(crate) mod errors;
+pub(crate) mod ls_path_type;
+pub(crate) mod opts;
 pub(crate) mod path_cmp;
-pub mod path_status;
-pub mod path_timestamps;
-pub mod path_type;
+pub(crate) mod path_status;
+pub(crate) mod path_timestamps;
+pub(crate) mod path_type;
 pub(crate) mod path_utils;
-pub mod perms;
-pub mod size;
-pub mod timed;
+pub(crate) mod perms;
+pub(crate) mod size;
+pub(crate) mod timed;
 
 use std::borrow::Cow;
 use std::cmp::Ordering;

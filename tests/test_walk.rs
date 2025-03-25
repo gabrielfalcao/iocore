@@ -1,5 +1,4 @@
-use iocore::errors::Error;
-use iocore::{glob, walk_dir, walk_globs, NoopProgressHandler, Path, WalkProgressHandler};
+use iocore::{glob, walk_dir, walk_globs, Error, NoopProgressHandler, Path, WalkProgressHandler};
 use iocore_test::{folder_path, path_to_test_folder};
 
 #[test]
@@ -107,7 +106,6 @@ fn test_walk_dir() -> Result<(), Error> {
             "io/buffer.rs",
             "io/error.rs",
             "io/mod.rs",
-            "walk/t.rs",
         ]
     );
     Ok(())
@@ -226,17 +224,19 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
         }
 
         fn should_scan_directory(&mut self, path: &Path) -> std::result::Result<bool, Error> {
-            if path.name() == "walk" {
-                return Err(Error::PathScanningError(format!(
-                    "path shall not be scanned",
-                )));
+            if path.name() == "fs" {
+                return Err(Error::PathScanningError(format!("path shall not be scanned",)));
             }
             Ok(path.is_directory())
         }
     }
     assert_eq!(
         walk_dir(&path, ErrorOnWalkHandler, None),
-        Err(Error::WalkDirError(format!("PathScanningError: path shall not be scanned"), path.join("walk"), 1)),
+        Err(Error::WalkDirError(
+            format!("PathScanningError: path shall not be scanned"),
+            path.join("fs"),
+            1
+        )),
     );
     Ok(())
 }

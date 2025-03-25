@@ -1,6 +1,6 @@
-use iocore::errors::*;
-use iocore::sys::*;
-use iocore::env::var as env_var;
+use iocore::*;
+use iocore::{guess_unix_home, User};
+use iocore::var as env_var;
 
 #[cfg(target_os = "macos")]
 #[test]
