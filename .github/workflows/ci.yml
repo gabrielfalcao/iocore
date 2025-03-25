@@ -30,7 +30,7 @@ jobs:
       - name: upload target artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: target-ubuntu
           path: target
       - name: test
         uses: actions-rs/cargo@v1
@@ -62,8 +62,9 @@ jobs:
       - name: upload target artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: target-macos
           path: target
+
       - name: test
         uses: actions-rs/cargo@v1
         with:
