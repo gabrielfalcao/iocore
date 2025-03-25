@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2025-03-24
+          override: true
       - name: check
         uses: actions-rs/cargo@v1
         with:
@@ -39,6 +42,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2025-03-24
+          override: true
       - name: check
         uses: actions-rs/cargo@v1
         with:
