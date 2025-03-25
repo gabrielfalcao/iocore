@@ -1,29 +1,6 @@
 //! iocore_test is a testing tool for crates that utilize the
 //! [`iocore`] crate.
 
-use iocore::*;
-
-/// `empty_path` returns [`iocore::Path`] deletes path if exists, but creates parent paths
-pub fn empty_path(
-    path: impl Into<Path>,
-    name: impl std::fmt::Display,
-    extension: Option<impl std::fmt::Display>,
-) -> Path {
-    let test_file = path.into().with_filename(name.to_string());
-    let test_file = match extension {
-        Some(s) => test_file.with_extension(s.to_string()),
-        None => test_file,
-    };
-    test_file.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
-    if test_file.exists() {
-        match test_file.delete() {
-            Ok(_) => {},
-            Err(_) => {},
-        }
-    }
-    test_file
-}
-
 /// `seq_bytes` returns a [`Vec<u8>`] containing a sequence of [`u8`]
 /// bytes and applying the remainder operation if `count` is longer
 /// than `u8::MAX`
@@ -44,14 +21,13 @@ pub fn seq_bytes(count: usize) -> Vec<u8> {
 #[macro_export]
 macro_rules! path_to_test_file {
     ($name:expr) => {{
-        let path = $crate::folder_path!().join($crate::test_function_name!()).join($name);
+        let path = $crate::folder_path!("__test_files__")
+            .join($crate::test_function_name!())
+            .join($name);
         path.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
         path.delete().map(|_| ()).unwrap_or_default();
         path
     }};
-    ($name:expr, $extension:expr) => {
-        iocore_test::empty_path($crate::test_function_name!(), $name, Some($extension))
-    };
 }
 
 /// `folder_path` returns the path to the parent folder of the calling test file, if called with an argument then calls [`iocore::Path::join`] on the folder path (creates folder if necessary)
@@ -101,12 +77,12 @@ macro_rules! test_function_name {
 #[macro_export]
 macro_rules! path_to_test_folder {
     () => {{
-        let path = $crate::folder_path!($crate::test_function_name!());
+        let path = $crate::folder_path!("__test_files__").join($crate::test_function_name!());
         path.mkdir_unchecked();
         path
     }};
     ($name:expr) => {{
-        let path = $crate::path_to_test_file!($name);
+        let path = $crate::path_to_test_folder!().join($name);
         path.mkdir_unchecked();
         path
     }};

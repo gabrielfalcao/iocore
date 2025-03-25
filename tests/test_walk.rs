@@ -36,9 +36,9 @@ fn test_walk_globs() -> Result<(), Error> {
     assert_eq!(
         glob_matches,
         vec![
-            "tests/test_walk/test_walk_globs/file5",
-            "tests/test_walk/test_walk_globs/file8",
-            "tests/test_walk/test_walk_globs/file9"
+            "tests/__test_files__/test_walk/test_walk_globs/file5",
+            "tests/__test_files__/test_walk/test_walk_globs/file8",
+            "tests/__test_files__/test_walk/test_walk_globs/file9"
         ]
     );
     let mut matches = walk_globs(vec![pattern], NoopProgressHandler, None)?
@@ -63,9 +63,9 @@ fn test_glob() -> Result<(), Error> {
     assert_eq!(
         glob_matches,
         vec![
-            "tests/test_walk/test_glob/file5",
-            "tests/test_walk/test_glob/file8",
-            "tests/test_walk/test_glob/file9"
+            "tests/__test_files__/test_walk/test_glob/file5",
+            "tests/__test_files__/test_walk/test_glob/file8",
+            "tests/__test_files__/test_walk/test_glob/file9"
         ]
     );
     Ok(())
