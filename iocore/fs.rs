@@ -1168,7 +1168,7 @@ impl Ord for Path {
 }
 impl Debug for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:#?}", &self.inner)
+        write!(f, "[{:#?}]{}", core::ptr::from_ref(self), &self.inner_string())
     }
 }
 impl Display for Path {

@@ -11,9 +11,7 @@ pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
         .cmp(&a.is_dir())
         .cmp(&b.to_string().cmp(&a.to_string()).cmp(&a.split().len().cmp(&b.split().len())));
     let cmp = if cmp == Ordering::Equal { fallback_cmp_paths_by_parts(a, b) } else { cmp };
-    let a_ref = core::ptr::from_ref(a);
-    let b_ref = core::ptr::from_ref(b);
-    dbg!(a, a_ref, b, b_ref, cmp);
+    dbg!(a, b, cmp);
     cmp
 }
 

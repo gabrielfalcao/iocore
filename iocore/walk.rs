@@ -44,7 +44,7 @@ fn iocore_walk_dir(
     for path in path.list()? {
         if path.is_directory() {
             let mut handler = handler.clone();
-            match handler.should_scan_directory(&path.clone()) {
+            match handler.should_scan_directory(&path) {
                 Ok(should_scan_path) =>
                     if should_scan_path {
                         let sub_path = path.clone();
@@ -58,7 +58,7 @@ fn iocore_walk_dir(
                             )
                         })?;
                     },
-                Err(error) => match handler.error(&path.clone(), error) {
+                Err(error) => match handler.error(&path, error) {
                     Some(error) => {
                         return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
                     },
@@ -66,10 +66,12 @@ fn iocore_walk_dir(
                 },
             }
         }
-        match handler.path_matching(&path.clone()) {
+        match handler.path_matching(&path) {
             Ok(should_aggregate_result) =>
                 if should_aggregate_result {
-                    result.push(path);
+                    if !result.contains(&path) {
+                        result.push(path);
+                    }
                 },
             Err(error) => match handler.error(&path, error) {
                 Some(error) => {
@@ -90,7 +92,9 @@ fn iocore_walk_dir(
             match handler.path_matching(path) {
                 Ok(should_aggregate_result) =>
                     if should_aggregate_result {
-                        result.push(path.clone());
+                        if !result.contains(&path) {
+                            result.push(path.clone());
+                        }
                     },
                 Err(error) => match handler.error(path, error) {
                     Some(error) => {
@@ -120,21 +124,7 @@ pub fn walk_dir(
             .iter()
             .map(|path| path.clone()),
     );
-    if result.len() > 3 {
-        // let left = &result[0];
-        // let left_rev = &result[(result.len() -2) / 2];
-        // let right = &result[(result.len() -1) / 2];
-        // let right_rev = &result[result.len() - 1];
-        // dbg!(
-        //     left,
-        //     core::ptr::from_ref(&left),
-        //     left_rev,
-        //     core::ptr::from_ref(&left_rev),
-        //     right,
-        //     core::ptr::from_ref(&right),
-        //     right_rev,
-        //     core::ptr::from_ref(&right_rev),
-        // );
+    if result.len() > 2 {
         result.sort();
     }
     Ok(result)
@@ -160,7 +150,7 @@ pub fn walk_globs(
             }
         }
     }
-    if result.len() >= 2 {
+    if result.len() > 2 {
         result.sort();
     }
     Ok(result)
