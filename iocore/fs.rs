@@ -1102,7 +1102,16 @@ impl Path {
 }
 impl PartialEq for Path {
     fn eq(&self, other: &Self) -> bool {
-        self.try_canonicalize().inner_string() == other.try_canonicalize().inner_string()
+        self.exists() == other.exists()
+            && self.is_directory() == other.is_directory()
+            && self.is_file() == other.is_file()
+            && self.try_canonicalize().to_string() == other.try_canonicalize().to_string()
+    }
+    fn ne(&self, other: &Self) -> bool {
+        self.exists() != other.exists()
+            && self.is_directory() != other.is_directory()
+            && self.is_file() != other.is_file()
+            && self.try_canonicalize().to_string() != other.try_canonicalize().to_string()
     }
 }
 impl Eq for Path {}
@@ -1110,6 +1119,34 @@ impl Eq for Path {}
 impl PartialOrd for Path {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         partial_cmp_paths_by_parts(self, other)
+    }
+
+    fn lt(&self, other: &Path) -> bool {
+        match cmp_paths_by_parts(self, other) {
+            Ordering::Less => true,
+            _ => false,
+        }
+    }
+
+    fn le(&self, other: &Path) -> bool {
+        match cmp_paths_by_parts(self, other) {
+            Ordering::Less => true,
+            _ => false,
+        }
+    }
+
+    fn gt(&self, other: &Path) -> bool {
+        match cmp_paths_by_parts(self, other) {
+            Ordering::Greater => true,
+            _ => false,
+        }
+    }
+
+    fn ge(&self, other: &Path) -> bool {
+        match cmp_paths_by_parts(self, other) {
+            Ordering::Greater => true,
+            _ => false,
+        }
     }
 }
 impl Ord for Path {

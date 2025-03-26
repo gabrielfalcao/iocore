@@ -1,5 +1,5 @@
 use iocore::{glob, walk_dir, walk_globs, Error, NoopProgressHandler, Path, WalkProgressHandler};
-use iocore_test::path_to_test_folder;
+use iocore_test::{folder_path, path_to_test_folder};
 
 #[test]
 fn test_walk_globs_lib_folder() -> Result<(), Error> {
@@ -110,14 +110,6 @@ fn test_walk_dir() -> Result<(), Error> {
     );
     Ok(())
 }
-
-// #[test]
-// fn test_walk_dir_fixtures() -> Result<(), Error> {
-//     let path = folder_path!("fixtures").mkdir_unchecked();
-//     let entries = walk_dir(&path, NoopProgressHandler, None)?;
-//     assert_eq!(entries.len(), 146);
-//     Ok(())
-// }
 
 #[test]
 fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
@@ -238,5 +230,13 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
             1
         )),
     );
+    Ok(())
+}
+
+#[test]
+fn test_walk_dir_fixtures() -> Result<(), Error> {
+    let path = folder_path!("fixtures").mkdir_unchecked();
+    let entries = walk_dir(&path, NoopProgressHandler, None)?;
+    assert_eq!(entries.len(), 146);
     Ok(())
 }

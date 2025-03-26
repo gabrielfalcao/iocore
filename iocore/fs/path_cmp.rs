@@ -3,15 +3,7 @@ use std::cmp::Ordering;
 use crate::Path;
 
 pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering> {
-    let cmp = b.is_dir().partial_cmp(&a.is_dir()).partial_cmp(
-        &b.to_string()
-            .partial_cmp(&a.to_string())
-            .partial_cmp(&a.split().len().partial_cmp(&b.split().len())),
-    );
-    match cmp {
-        Some(Ordering::Less) | Some(Ordering::Greater) => cmp,
-        _ => Some(fallback_cmp_paths_by_parts(a, b)),
-    }
+    Some(cmp_paths_by_parts(a, b))
 }
 pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
     let cmp = b
@@ -67,8 +59,10 @@ pub(crate) fn path_ord_to_string_max(a: Path, b: Path) -> Path {
     let b_parts = b.to_string();
     if a_parts.len() > b_parts.len() {
         a
-    } else {
+    } else if a_parts.len() < b_parts.len() {
         b
+    } else {
+        Path::raw(a_parts.max(b_parts))
     }
 }
 
@@ -77,8 +71,10 @@ pub(crate) fn path_ord_to_string_min(a: Path, b: Path) -> Path {
     let b_parts = b.to_string();
     if a_parts.len() < b_parts.len() {
         a
-    } else {
+    } else if a_parts.len() > b_parts.len() {
         b
+    } else {
+        Path::raw(a_parts.min(b_parts))
     }
 }
 
@@ -91,7 +87,7 @@ pub(crate) fn path_ord_to_string_clamp(current: Path, min: Path, max: Path) -> P
     } else if current_parts.len() < min_parts.len() {
         min
     } else {
-        current
+        Path::raw(current_parts.clamp(min_parts, max_parts))
     }
 }
 /// `fallback_cmp_paths_by_parts` provides a way to further order two
@@ -100,7 +96,7 @@ pub(crate) fn path_ord_to_string_clamp(current: Path, min: Path, max: Path) -> P
 ///
 /// In other words, this function is a clear attempt at achieving "total order"
 pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
-    let ordering = if a.split().len() > b.split().len() {
+    if a.split().len() > b.split().len() {
         Ordering::Greater
     } else if a.split().len() < b.split().len() {
         Ordering::Less
@@ -110,8 +106,7 @@ pub(crate) fn fallback_cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
         } else {
             Ordering::Less
         }
-    };
-    ordering
+    }
 }
 
 
