@@ -12,7 +12,7 @@ pub(crate) mod size;
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{VecDeque};
 use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -1178,10 +1178,7 @@ impl Display for Path {
 }
 impl Hash for Path {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut parts = BTreeSet::<String>::new();
-        parts.insert(self.kind().to_string());
-        parts.insert(self.try_canonicalize().to_string());
-        Vec::from_iter(parts.into_iter()).join("%").hash(state);
+        self.try_canonicalize().to_string().hash(state)
     }
 }
 

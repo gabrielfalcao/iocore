@@ -233,10 +233,10 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
     Ok(())
 }
 
-// #[test]
-// fn test_walk_dir_fixtures() -> Result<(), Error> {
-//     let path = folder_path!("fixtures").mkdir_unchecked();
-//     let entries = walk_dir(&path, NoopProgressHandler, None)?;
-//     assert_eq!(entries.len(), 146);
-//     Ok(())
-// }
+#[test]
+fn test_walk_dir_fixtures() -> Result<(), Error> {
+    let path = folder_path!("fixtures");
+    let entries = walk_dir(&path, NoopProgressHandler, None)?;
+    assert_eq!(entries.len(), 146);
+    Ok(())
+}

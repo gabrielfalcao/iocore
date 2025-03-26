@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use thread_groups::ThreadGroup;
 
 use crate::{Error, Path};
@@ -12,7 +10,7 @@ fn iocore_walk_dir(
     mut handler: impl WalkProgressHandler,
     max_depth: Option<MaxDepth>,
     depth: Option<Depth>,
-) -> Result<HashSet<Path>, Error> {
+) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
     let max_depth = max_depth.unwrap_or(usize::MAX);
     let depth = depth.unwrap_or(0) + 1;
@@ -30,8 +28,8 @@ fn iocore_walk_dir(
             depth,
         ));
     }
-    let mut result = HashSet::<Path>::new();
-    let mut threads: ThreadGroup<Result<HashSet<Path>, Error>> =
+    let mut result = Vec::<Path>::new();
+    let mut threads: ThreadGroup<Result<Vec<Path>, Error>> =
         ThreadGroup::with_id(format!("walk_dir:{}", path));
 
     if depth > max_depth {
@@ -71,7 +69,7 @@ fn iocore_walk_dir(
         match handler.path_matching(&path.clone()) {
             Ok(should_aggregate_result) =>
                 if should_aggregate_result {
-                    result.insert(path);
+                    result.push(path);
                 },
             Err(error) => match handler.error(&path, error) {
                 Some(error) => {
@@ -92,7 +90,7 @@ fn iocore_walk_dir(
             match handler.path_matching(path) {
                 Ok(should_aggregate_result) =>
                     if should_aggregate_result {
-                        result.insert(path.clone());
+                        result.push(path.clone());
                     },
                 Err(error) => match handler.error(path, error) {
                     Some(error) => {
@@ -122,7 +120,23 @@ pub fn walk_dir(
             .iter()
             .map(|path| path.clone()),
     );
-    result.sort();
+    if result.len() > 3 {
+        // let left = &result[0];
+        // let left_rev = &result[(result.len() -2) / 2];
+        // let right = &result[(result.len() -1) / 2];
+        // let right_rev = &result[result.len() - 1];
+        // dbg!(
+        //     left,
+        //     core::ptr::from_ref(&left),
+        //     left_rev,
+        //     core::ptr::from_ref(&left_rev),
+        //     right,
+        //     core::ptr::from_ref(&right),
+        //     right_rev,
+        //     core::ptr::from_ref(&right_rev),
+        // );
+        result.sort();
+    }
     Ok(result)
 }
 
