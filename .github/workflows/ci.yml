@@ -5,10 +5,10 @@ on:
   - pull_request
 
 env:
-  CARGO_TERM_COLOR: always
-  TZ: UTC
-  RUST_BACKTRACE: full
-
+  CARGO_TERM_COLOR: "always"
+  TZ: "UTC"
+  RUST_BACKTRACE: "full"
+  RUSTFLAGS: "-C opt-level=0 -g"
 jobs:
   ubuntu:
     name: Check, Build and Test (Ubuntu)
