@@ -124,9 +124,6 @@ pub fn walk_dir(
             .iter()
             .map(|path| path.clone()),
     );
-    if result.len() > 2 {
-        result.sort();
-    }
     Ok(result)
 }
 

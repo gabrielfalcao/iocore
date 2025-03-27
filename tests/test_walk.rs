@@ -74,14 +74,17 @@ fn test_glob() -> Result<(), Error> {
 #[test]
 fn test_walk_dir() -> Result<(), Error> {
     let path = Path::raw("iocore").canonicalize()?;
+    let mut results = walk_dir(&path, NoopProgressHandler, None)?
+        .iter()
+        .filter(|path| {
+            !path.is_directory() && !path.name().starts_with(".") && !path.name().starts_with("#")
+        })
+        .map(|entry_path| entry_path.relative_to(&path))
+        .collect::<Vec<Path>>();
+    results.sort();
+    let results = results.iter().map(|path|path.to_string()).collect::<Vec<String>>();
     assert_eq!(
-        walk_dir(&path, NoopProgressHandler, None)?
-            .iter()
-            .filter(|path| !path.is_directory()
-                && !path.name().starts_with(".")
-                && !path.name().starts_with("#"))
-            .map(|entry_path| entry_path.relative_to(&path).to_string())
-            .collect::<Vec<String>>(),
+        results,
         vec![
             "coreio.rs",
             "env.rs",
@@ -121,14 +124,17 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
             Ok(!path.to_string().contains("walk/"))
         }
     }
+    let mut results = walk_dir(&path, IgnoreWalkDirectoryHandler, None)?
+        .iter()
+        .filter(|path| {
+            !path.is_directory() && !path.name().starts_with(".") && !path.name().starts_with("#")
+        })
+        .map(|entry_path| entry_path.relative_to(&path))
+        .collect::<Vec<Path>>();
+    results.sort();
+    let results = results.iter().map(|path|path.to_string()).collect::<Vec<String>>();
     assert_eq!(
-        walk_dir(&path, IgnoreWalkDirectoryHandler, None)?
-            .iter()
-            .filter(|path| !path.is_directory()
-                && !path.name().starts_with(".")
-                && !path.name().starts_with("#"))
-            .map(|entry_path| entry_path.relative_to(&path).to_string())
-            .collect::<Vec<String>>(),
+        results,
         vec![
             "coreio.rs",
             "env.rs",
@@ -173,12 +179,15 @@ fn test_walk_dir_skip_scanning_specific_directories() -> Result<(), Error> {
             Ok(!skip_directory_names.contains(&path.name()))
         }
     }
-    assert_eq!(
-        walk_dir(&path, SkipWalkDirectoryHandler, None)?
+    let mut results = walk_dir(&path, SkipWalkDirectoryHandler, None)?
             .iter()
             .filter(|path| !path.is_directory())
-            .map(|entry_path| entry_path.relative_to(&path).to_string())
-            .collect::<Vec<String>>(),
+            .map(|entry_path| entry_path.relative_to(&path))
+        .collect::<Vec<Path>>();
+    results.sort();
+    let results = results.iter().map(|path|path.to_string()).collect::<Vec<String>>();
+    assert_eq!(
+        results,
         vec![
             "coreio.rs",
             "env.rs",

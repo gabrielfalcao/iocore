@@ -12,7 +12,7 @@ pub(crate) mod size;
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::{VecDeque};
+use std::collections::VecDeque;
 use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -1107,6 +1107,7 @@ impl PartialEq for Path {
             && self.is_file() == other.is_file()
             && self.try_canonicalize().to_string() == other.try_canonicalize().to_string()
     }
+
     fn ne(&self, other: &Self) -> bool {
         self.exists() != other.exists()
             && self.is_directory() != other.is_directory()
