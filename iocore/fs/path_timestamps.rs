@@ -108,15 +108,17 @@ impl std::fmt::Debug for PathTimestamps {
 #[macro_export]
 macro_rules! path_datetime_from_metadata_field {
     ($field:ident, $metadata:ident, $path:ident $(,)?) => {
-        Into::<$crate::fs::path_datetime::PathDateTime>::into($metadata.$field().map_err(|error| {
-            let io_error = Error::IOError(error.kind()).to_string();
-            Error::FileSystemError(format!(
-                "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
-                $metadata,
-                $path.to_string(),
-                io_error
-            ))
-        })?)
+        Into::<$crate::fs::path_datetime::PathDateTime>::into($metadata.$field().map_err(
+            |error| {
+                let io_error = Error::IOError(error.kind()).to_string();
+                Error::FileSystemError(format!(
+                    "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
+                    $metadata,
+                    $path.to_string(),
+                    io_error
+                ))
+            },
+        )?)
     };
 }
 

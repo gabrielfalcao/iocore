@@ -1,7 +1,7 @@
 use iocore::{
     expand_home_regex, path_str_to_relative_subpath, remove_duplicate_separators, remove_end,
-    remove_equal_prefix_from_path_strings, remove_start, remove_trailing_slash, repl_beg, repl_end,
-    split_str_into_relative_subpath_parts, remove_redundant_current_path
+    remove_equal_prefix_from_path_strings, remove_redundant_current_path, remove_start,
+    remove_trailing_slash, repl_beg, repl_end, split_str_into_relative_subpath_parts,
 };
 
 #[test]

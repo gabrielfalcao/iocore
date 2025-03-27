@@ -443,9 +443,6 @@ fn test_relative_to_parent_to_child_no_trailing_slash_both_inexisting_paths() ->
     let test_file = test_folder.join("x/y/z.bin");
     test_file.delete_unchecked();
 
-    assert_eq!(
-        test_folder.relative_to(&test_file).to_string(),
-        "../../../"
-    );
+    assert_eq!(test_folder.relative_to(&test_file).to_string(), "../../../");
     Ok(())
 }

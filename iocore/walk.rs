@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use thread_groups::ThreadGroup;
 
 use crate::{Error, Path};
@@ -12,7 +10,7 @@ fn iocore_walk_dir(
     mut handler: impl WalkProgressHandler,
     max_depth: Option<MaxDepth>,
     depth: Option<Depth>,
-) -> Result<HashSet<Path>, Error> {
+) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
     let max_depth = max_depth.unwrap_or(usize::MAX);
     let depth = depth.unwrap_or(0) + 1;
@@ -30,8 +28,8 @@ fn iocore_walk_dir(
             depth,
         ));
     }
-    let mut result = HashSet::<Path>::new();
-    let mut threads: ThreadGroup<Result<HashSet<Path>, Error>> =
+    let mut result = Vec::<Path>::new();
+    let mut threads: ThreadGroup<Result<Vec<Path>, Error>> =
         ThreadGroup::with_id(format!("walk_dir:{}", path));
 
     if depth > max_depth {
@@ -46,7 +44,7 @@ fn iocore_walk_dir(
     for path in path.list()? {
         if path.is_directory() {
             let mut handler = handler.clone();
-            match handler.should_scan_directory(&path.clone()) {
+            match handler.should_scan_directory(&path) {
                 Ok(should_scan_path) =>
                     if should_scan_path {
                         let sub_path = path.clone();
@@ -60,7 +58,7 @@ fn iocore_walk_dir(
                             )
                         })?;
                     },
-                Err(error) => match handler.error(&path.clone(), error) {
+                Err(error) => match handler.error(&path, error) {
                     Some(error) => {
                         return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
                     },
@@ -68,10 +66,12 @@ fn iocore_walk_dir(
                 },
             }
         }
-        match handler.path_matching(&path.clone()) {
+        match handler.path_matching(&path) {
             Ok(should_aggregate_result) =>
                 if should_aggregate_result {
-                    result.insert(path);
+                    if !result.contains(&path) {
+                        result.push(path);
+                    }
                 },
             Err(error) => match handler.error(&path, error) {
                 Some(error) => {
@@ -92,7 +92,9 @@ fn iocore_walk_dir(
             match handler.path_matching(path) {
                 Ok(should_aggregate_result) =>
                     if should_aggregate_result {
-                        result.insert(path.clone());
+                        if !result.contains(&path) {
+                            result.push(path.clone());
+                        }
                     },
                 Err(error) => match handler.error(path, error) {
                     Some(error) => {
@@ -117,12 +119,11 @@ pub fn walk_dir(
     max_depth: Option<usize>,
 ) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
-    let mut result = Vec::<Path>::from_iter(
+    let result = Vec::<Path>::from_iter(
         iocore_walk_dir(&path, handler, max_depth, None)?
             .iter()
             .map(|path| path.clone()),
     );
-    result.sort();
     Ok(result)
 }
 
@@ -146,7 +147,7 @@ pub fn walk_globs(
             }
         }
     }
-    if result.len() >= 2 {
+    if result.len() > 2 {
         result.sort();
     }
     Ok(result)

@@ -1,6 +1,4 @@
-use iocore::*;
-use iocore::{guess_unix_home, User};
-use iocore::var as env_var;
+use iocore::{guess_unix_home, var as env_var, User, *};
 
 #[cfg(target_os = "macos")]
 #[test]

@@ -56,7 +56,8 @@ impl std::fmt::Display for Error {
             Error::WalkDirInterrupted(e, path, depth) => {
                 write!(f, "WalkDirInterrupt {} (depth: {:#?}): {}", path, depth, e)
             },
-            Error::WalkDirError(e, path, depth) => write!(f, "WalkDirError {}(depth={}): {}", path, depth, e),
+            Error::WalkDirError(e, path, depth) =>
+                write!(f, "WalkDirError {}(depth={}): {}", path, depth, e),
             Error::PathScanningError(path) => write!(f, "PathScanningError: {}", path),
             Error::PathDoesNotExist(path) => write!(f, "PathDoesNotExist: {}", path),
             Error::MalformedFileName(e) => write!(f, "MalformedFileName: {}", e),
