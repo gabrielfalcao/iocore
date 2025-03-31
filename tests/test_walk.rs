@@ -246,6 +246,11 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
 fn test_walk_dir_fixtures() -> Result<(), Error> {
     let path = folder_path!("fixtures");
     let entries = walk_dir(&path, NoopProgressHandler, None)?;
+    /*
+    //currently fails
+    let mut  entries = walk_dir(&path, NoopProgressHandler, None)?;
+    entries.sort();
+    */
     assert_eq!(entries.len(), 146);
     Ok(())
 }
