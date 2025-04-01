@@ -41,11 +41,10 @@ fn test_walk_globs() -> Result<(), Error> {
             "tests/__test_files__/test_walk/test_walk_globs/file9"
         ]
     );
-    let mut matches = walk_globs(vec![pattern], NoopProgressHandler, None)?
+    let matches = walk_globs(vec![pattern], NoopProgressHandler, None)?
         .iter()
         .map(|path| path.name())
         .collect::<Vec<String>>();
-    matches.sort();
     assert_eq!(matches, vec!["file5", "file8", "file9"]);
     Ok(())
 }
@@ -74,15 +73,14 @@ fn test_glob() -> Result<(), Error> {
 #[test]
 fn test_walk_dir() -> Result<(), Error> {
     let path = Path::raw("iocore").canonicalize()?;
-    let mut results = walk_dir(&path, NoopProgressHandler, None)?
+    let results = walk_dir(&path, NoopProgressHandler, None)?
         .iter()
         .filter(|path| {
             !path.is_directory() && !path.name().starts_with(".") && !path.name().starts_with("#")
         })
-        .map(|entry_path| entry_path.relative_to(&path))
-        .collect::<Vec<Path>>();
-    results.sort();
-    let results = results.iter().map(|path| path.to_string()).collect::<Vec<String>>();
+        .map(|entry_path| entry_path.relative_to(&path).to_string())
+        .collect::<Vec<String>>();
+
     assert_eq!(
         results,
         vec![
@@ -124,15 +122,13 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
             Ok(!path.to_string().contains("walk/"))
         }
     }
-    let mut results = walk_dir(&path, IgnoreWalkDirectoryHandler, None)?
+    let results = walk_dir(&path, IgnoreWalkDirectoryHandler, None)?
         .iter()
         .filter(|path| {
             !path.is_directory() && !path.name().starts_with(".") && !path.name().starts_with("#")
         })
-        .map(|entry_path| entry_path.relative_to(&path))
-        .collect::<Vec<Path>>();
-    results.sort();
-    let results = results.iter().map(|path| path.to_string()).collect::<Vec<String>>();
+        .map(|entry_path| entry_path.relative_to(&path).to_string())
+        .collect::<Vec<String>>();
     assert_eq!(
         results,
         vec![
@@ -179,13 +175,11 @@ fn test_walk_dir_skip_scanning_specific_directories() -> Result<(), Error> {
             Ok(!skip_directory_names.contains(&path.name()))
         }
     }
-    let mut results = walk_dir(&path, SkipWalkDirectoryHandler, None)?
+    let results = walk_dir(&path, SkipWalkDirectoryHandler, None)?
         .iter()
         .filter(|path| !path.is_directory())
-        .map(|entry_path| entry_path.relative_to(&path))
-        .collect::<Vec<Path>>();
-    results.sort();
-    let results = results.iter().map(|path| path.to_string()).collect::<Vec<String>>();
+        .map(|entry_path| entry_path.relative_to(&path).to_string())
+        .collect::<Vec<String>>();
     assert_eq!(
         results,
         vec![
@@ -246,11 +240,6 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
 fn test_walk_dir_fixtures() -> Result<(), Error> {
     let path = folder_path!("fixtures");
     let entries = walk_dir(&path, NoopProgressHandler, None)?;
-    /*
-    //currently fails
-    let mut  entries = walk_dir(&path, NoopProgressHandler, None)?;
-    entries.sort();
-    */
     assert_eq!(entries.len(), 146);
     Ok(())
 }

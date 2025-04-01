@@ -76,14 +76,6 @@ fn test_tildify() -> Result<()> {
 }
 
 #[test]
-fn test_path_as_str() -> Result<()> {
-    let test_path = Path::raw(file!()).relative_to_cwd();
-
-    assert_eq!(test_path.as_str(), "tests/test_path.rs");
-    Ok(())
-}
-
-#[test]
 fn test_path_path() -> Result<()> {
     let test_path = Path::raw(file!());
     let mut pathbuf = std::path::PathBuf::new();
@@ -149,12 +141,6 @@ fn test_path_from_std_path() -> Result<()> {
 #[test]
 fn test_path_inner_string() -> Result<()> {
     assert_eq!(Path::raw("string").inner_string(), String::from("string"));
-    Ok(())
-}
-
-#[test]
-fn test_path_str() -> Result<()> {
-    assert_eq!(Path::raw("&'static str").as_str(), "&'static str");
     Ok(())
 }
 

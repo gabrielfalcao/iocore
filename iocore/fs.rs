@@ -9,7 +9,6 @@ pub(crate) mod path_type;
 pub(crate) mod path_utils;
 pub(crate) mod perms;
 pub(crate) mod size;
-
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
@@ -18,10 +17,11 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::path::MAIN_SEPARATOR_STR;
+use std::path::{PathBuf, MAIN_SEPARATOR_STR};
 use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
+use std::sync::RwLock;
 
 use opts::OpenOptions;
 use path_cmp::{
@@ -59,9 +59,9 @@ pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 ///     "tests/doctest-path"
 /// );
 /// ```
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Path {
-    inner: String,
+    lock: RwLock<String>,
 }
 
 impl Path {
@@ -92,17 +92,19 @@ impl Path {
                 string
             )));
         }
-        Ok(Path { inner: string })
+        Ok(Path::raw(string))
     }
 
     /// `raw` instantiates a [`Path`] with the given string making no validations nor extensions, unlike [`new`] and [`safe`]
-    pub fn raw(inner: impl std::fmt::Display) -> Path {
-        let inner = inner.to_string();
-        Path { inner }
+    pub fn raw(lock: impl std::fmt::Display) -> Path {
+        let string = lock.to_string();
+        Path {
+            lock: RwLock::new(string),
+        }
     }
 
     /// `from_path_buf` returns a [`Path`] from a [`std::path::PathBuf`]
-    pub fn from_path_buf(path_buf: &std::path::PathBuf) -> Path {
+    pub fn from_path_buf(path_buf: &PathBuf) -> Path {
         Path::raw(path_buf.display())
     }
 
@@ -141,7 +143,7 @@ impl Path {
         }
     }
 
-    pub fn query_type(&self) -> PathType {
+    pub fn kind(&self) -> PathType {
         if self.is_file() {
             PathType::File
         } else if self.is_dir() {
@@ -153,19 +155,12 @@ impl Path {
         }
     }
 
-    pub fn kind(&self) -> PathType {
-        self.query_type()
-    }
-
     pub fn inner_string(&self) -> String {
-        self.inner.to_string()
+        let lock = self.lock.read().unwrap();
+        (*lock).to_string()
     }
 
-    pub fn as_str(&self) -> &'static str {
-        self.inner_string().leak()
-    }
-
-    pub fn path(&self) -> &'static std::path::Path {
+    pub fn path<'a>(&self) -> &'a std::path::Path {
         let mut pathbuf = std::path::PathBuf::new();
         for part in self.split() {
             pathbuf.push(part);
@@ -713,12 +708,10 @@ impl Path {
     pub fn without_extension(&self) -> Path {
         let mut parts = self
             .extension()
-            .map(|e| self.name().split(e.as_str()).map(String::from).collect::<Vec<String>>())
+            .map(|e| self.name().split(&e.to_string()).map(String::from).collect::<Vec<String>>())
             .unwrap_or_else(|| vec![self.name(), String::new()]);
         parts.pop();
-        self.parent()
-            .unwrap()
-            .join(parts.join(self.extension().unwrap_or_default().as_str()))
+        self.parent().unwrap().join(parts.join(&self.extension().unwrap_or_default()))
     }
 
     pub fn with_extension(&self, extension: impl ::std::fmt::Display) -> Path {
@@ -1169,12 +1162,12 @@ impl Ord for Path {
 }
 impl Debug for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "[{:#?}]{}", core::ptr::from_ref(self), &self.inner_string())
+        write!(f, "[{:#?}]{}", core::ptr::from_ref(self), &self.relative_to_cwd().to_string())
     }
 }
 impl Display for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &self.inner)
+        write!(f, "{}", self.inner_string())
     }
 }
 impl Hash for Path {
@@ -1189,6 +1182,11 @@ impl Into<String> for Path {
     }
 }
 
+impl Clone for Path {
+    fn clone(&self) -> Path {
+        Path::raw(self.inner_string())
+    }
+}
 impl Into<::std::path::PathBuf> for Path {
     fn into(self) -> ::std::path::PathBuf {
         self.to_path_buf()

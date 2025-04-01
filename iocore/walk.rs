@@ -119,11 +119,14 @@ pub fn walk_dir(
     max_depth: Option<usize>,
 ) -> Result<Vec<Path>, Error> {
     let path = Into::<Path>::into(path);
-    let result = Vec::<Path>::from_iter(
+    let mut result = Vec::<Path>::from_iter(
         iocore_walk_dir(&path, handler, max_depth, None)?
             .iter()
             .map(|path| path.clone()),
     );
+    if result.len() > 2 {
+        result.sort();
+    }
     Ok(result)
 }
 
