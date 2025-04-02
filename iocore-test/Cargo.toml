@@ -1,6 +1,6 @@
 [package]
 name = "iocore-test"
-version = "0.1011.0"
+version = "1.0.1"
 edition = "2024"
 autoexamples = false
 autobenches = false
@@ -11,7 +11,7 @@ homepage = "https://github.com/gabrielfalcao/iocore"
 license = "MIT"
 
 [package.metadata]
-cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps"]
+cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps", "-Zcustom_mir"]
 
 
 [lib]
@@ -21,4 +21,4 @@ doctest = false
 bench = false
 
 [dependencies]
-iocore = { version = "0.1011.0" }
+iocore = { version = "1.0.1" }
