@@ -21,3 +21,4 @@ stubs.*
 *.test
 tests/*
 !tests/*.rs
+*.profraw

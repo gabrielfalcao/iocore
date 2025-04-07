@@ -24,7 +24,6 @@
 #![cfg(target_family = "unix")]
 #[macro_use]
 extern crate lazy_static;
-pub(crate) mod coreio;
 pub(crate) mod env;
 pub(crate) mod errors;
 pub(crate) mod fs;
@@ -33,11 +32,6 @@ pub(crate) mod sh;
 pub(crate) mod sys;
 pub(crate) mod walk;
 
-pub use coreio::{
-    absolute_path, absolutely_current_path, canonical_path, ensure_dir_exists, expand_path,
-    get_or_create_parent_dir, open_append, open_read, read_file, read_file_bytes, resolved_path,
-    write_file,
-};
 pub use env::{args, args_from_string, var};
 pub use errors::{Error, Result};
 pub use fs::errors::{FileSystemError, FileSystemException};

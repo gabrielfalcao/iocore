@@ -3,7 +3,9 @@ use std::os::unix::fs::MetadataExt;
 use std::path::MAIN_SEPARATOR_STR;
 
 use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result};
-use iocore_test::{folder_path, path_to_test_file, path_to_test_folder, seq_bytes};
+use iocore_test::{
+    folder_path, path_to_test_directory, path_to_test_file, path_to_test_folder, seq_bytes,
+};
 use trilobyte::TriloByte;
 
 #[test]
@@ -354,10 +356,8 @@ fn test_path_size() -> Result<()> {
 }
 #[test]
 fn test_relative_to_parent_to_child_with_trailing_slash_both_inexisting_paths() -> Result<()> {
-    let test_folder = path_to_test_folder!("a/b/c");
-    test_folder.delete_unchecked();
-    let test_file = path_to_test_file!("a/b/c/x/y/z.bin");
-    test_file.delete_unchecked();
+    let test_folder = path_to_test_folder!("a/b/c").delete_unchecked();
+    let test_file = path_to_test_file!("a/b/c/x/y/z.bin").delete_unchecked();
     assert_eq!(test_folder.relative_to(&test_file).to_string(), "../../../");
     Ok(())
 }
@@ -406,7 +406,7 @@ fn test_path_directory() -> Result<()> {
         Path::directory(&Path::raw(existing_directory_path_string)),
         Err(Error::UnexpectedPathType(
             absolute_path_to_existing_directory_path,
-            PathType::Directory
+            PathType::None
         ))
     );
 
@@ -415,8 +415,8 @@ fn test_path_directory() -> Result<()> {
 
 #[test]
 fn test_path_kind() -> Result<()> {
-    let file = path_to_test_file!("test_path_kind_file").write(&[])?;
-    let folder = folder_path!("test_path_kind_folder").mkdir()?;
+    let file = path_to_test_file!("test_path_kind_file").write_unchecked(&[]);
+    let folder = folder_path!("test_path_kind_folder").mkdir_unchecked();
     assert_eq!(file.kind(), PathType::File);
     assert_eq!(folder.kind(), PathType::Directory);
     Ok(())
@@ -430,5 +430,33 @@ fn test_relative_to_parent_to_child_no_trailing_slash_both_inexisting_paths() ->
     test_file.delete_unchecked();
 
     assert_eq!(test_folder.relative_to(&test_file).to_string(), "../../../");
+    Ok(())
+}
+
+#[test]
+fn test_file() -> Result<()> {
+    let test_file = path_to_test_file!("a/b/c").write_unchecked(&[]);
+    assert_eq!(Path::file(test_file.to_string()), Ok(test_file));
+    Ok(())
+}
+
+#[test]
+fn test_writable_file() -> Result<()> {
+    let test_file = path_to_test_file!("a/b/c").write_unchecked(&[]);
+    assert_eq!(Path::writable_file(test_file.to_string()), Ok(test_file));
+    Ok(())
+}
+
+#[test]
+fn test_directory() -> Result<()> {
+    let test_directory = path_to_test_directory!("a/b/c").mkdir()?;
+    assert_eq!(Path::directory(test_directory.to_string()), Ok(test_directory));
+    Ok(())
+}
+
+#[test]
+fn test_writable_directory() -> Result<()> {
+    let test_directory = path_to_test_directory!("a/b/c").mkdir()?;
+    assert_eq!(Path::writable_directory(test_directory.to_string()), Ok(test_directory));
     Ok(())
 }

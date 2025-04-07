@@ -21,9 +21,7 @@ pub fn seq_bytes(count: usize) -> Vec<u8> {
 #[macro_export]
 macro_rules! path_to_test_file {
     ($name:expr) => {{
-        let path = $crate::folder_path!("__test_files__")
-            .join($crate::test_function_name!())
-            .join($name);
+        let path = $crate::folder_path!("__test_files__").join($crate::test_name!()).join($name);
         path.parent().unwrap().mkdir().map(|_| ()).unwrap_or_default();
         path.delete().map(|_| ()).unwrap_or_default();
         path
@@ -46,6 +44,16 @@ macro_rules! folder_path {
         path
     }};
 }
+/// `directory_path` returns the path to the parent directory of the calling test file, if called with an argument then calls [`iocore::Path::join`] on the directory path (creates directory if necessary)
+#[macro_export]
+macro_rules! directory_path {
+    () => {{
+        $crate::folder_path!()
+    }};
+    ($name:expr) => {
+        $crate::folder_path!($name)
+    };
+}
 
 /// `test_folder_parent_path` returns the parent folder of the test file which calls it joined with the given "name" (creates the directory if necessary)
 #[macro_export]
@@ -59,9 +67,16 @@ macro_rules! test_folder_parent_path {
         path
     }};
 }
-/// `test_function_name` returns the name of the test function
+/// `test_directory_parent_path` returns the parent directory of the test file which calls it joined with the given "name" (creates the directory if necessary)
 #[macro_export]
-macro_rules! test_function_name {
+macro_rules! test_directory_parent_path {
+    ($name:expr) => {{
+        $crate::test_folder_parent_path($name)
+    }};
+}
+/// `test_name` returns the name of the test function
+#[macro_export]
+macro_rules! test_name {
     () => {{
         fn f() {}
         fn type_name_of<T>(_: T) -> &'static str {
@@ -77,7 +92,7 @@ macro_rules! test_function_name {
 #[macro_export]
 macro_rules! path_to_test_folder {
     () => {{
-        let path = $crate::folder_path!("__test_files__").join($crate::test_function_name!());
+        let path = $crate::folder_path!("__test_files__").join($crate::test_name!());
         path.mkdir_unchecked();
         path
     }};
@@ -85,5 +100,16 @@ macro_rules! path_to_test_folder {
         let path = $crate::path_to_test_folder!().join($name);
         path.mkdir_unchecked();
         path
+    }};
+}
+
+/// `path_to_test_file` returns the path to a test directory as the test file
+#[macro_export]
+macro_rules! path_to_test_directory {
+    () => {{
+        $crate::path_to_test_folder!()
+    }};
+    ($name:expr) => {{
+        $crate::path_to_test_folder!($name)
     }};
 }

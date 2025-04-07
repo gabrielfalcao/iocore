@@ -35,7 +35,8 @@ use path_utils::{
 };
 use perms::PathPermissions;
 use sanitation::SString;
-use serde::{Deserialize, Serialize};
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use size::Size;
 
 use crate::errors::Error;
@@ -59,7 +60,6 @@ pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 ///     "tests/doctest-path"
 /// );
 /// ```
-#[derive(Serialize, Deserialize)]
 pub struct Path {
     lock: RwLock<String>,
 }
@@ -93,6 +93,16 @@ impl Path {
             )));
         }
         Ok(Path::raw(string))
+    }
+    /// `canonical` is a shortcut to [`new`] followed by [`try_canonicalize`]
+    ///
+    /// Example
+    /// ```
+    /// use iocore::Path;
+    /// assert_eq!(Path::canonical("~"), Path::new("~").try_canonicalize());
+    /// ```
+    pub fn canonical(path: impl std::fmt::Display) -> Path {
+        Path::new(path).try_canonicalize()
     }
 
     /// `raw` instantiates a [`Path`] with the given string making no validations nor extensions, unlike [`new`] and [`safe`]
@@ -233,21 +243,21 @@ impl Path {
     }
 
     pub fn file(path: impl std::fmt::Display) -> Result<Path, Error> {
-        let path = Path::new(path).try_canonicalize();
+        let path = Path::canonical(path);
 
-        if path.is_file() {
+        if path.try_canonicalize().is_file() {
             Ok(path)
         } else {
-            Err(Error::UnexpectedPathType(path, PathType::File))
+            Err(Error::UnexpectedPathType(path.clone(), path.kind()))
         }
     }
 
     pub fn directory(path: impl std::fmt::Display) -> Result<Path, Error> {
-        let path = Path::new(path).try_canonicalize();
+        let path = Path::canonical(path);
         if path.is_directory() {
             Ok(path)
         } else {
-            Err(Error::UnexpectedPathType(path, PathType::Directory))
+            Err(Error::UnexpectedPathType(path.clone(), path.kind()))
         }
     }
 
@@ -1297,10 +1307,79 @@ mod tests {
         assert_eq!(iocore_fs_path.relative_to(&iocore_lib_path).to_string(), "fs.rs");
         assert_eq!(iocore_lib_path.relative_to(&iocore_fs_path).to_string(), "../");
     }
-
     #[test]
     fn test_path_relative_to_cwd() {
         let iocore_fs_path = Path::raw(file!());
         assert_eq!(iocore_fs_path.relative_to_cwd().to_string(), "iocore/fs.rs");
+    }
+
+    #[test]
+    fn test_serialize_and_deserialize() {
+        let path = Path::raw(file!()).relative_to_cwd();
+        let serialized = serde_json::to_string(&path).unwrap();
+        assert_eq!(serialized, "\"iocore/fs.rs\"");
+        assert_eq!(serde_json::from_str::<Path>(serialized.as_str()).unwrap(), path);
+    }
+}
+
+impl Serialize for Path {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for Path {
+    fn deserialize<D>(deserializer: D) -> Result<Path, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_string(PathVisitor)
+    }
+}
+struct PathVisitor;
+
+impl<'de> Visitor<'de> for PathVisitor {
+    type Value = Path;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("string")
+    }
+
+    fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Err(E::custom(format!("cannot deserialize i8: {:#?}", value)))
+    }
+
+    fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Err(E::custom(format!("cannot deserialize i8: {:#?}", value)))
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Err(E::custom(format!("cannot deserialize i8: {:#?}", value)))
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Path::raw(value))
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Path::raw(value.as_str()))
     }
 }

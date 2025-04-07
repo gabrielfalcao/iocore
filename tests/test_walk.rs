@@ -10,7 +10,6 @@ fn test_walk_globs_lib_folder() -> Result<(), Error> {
             .map(|path| path.name())
             .collect::<Vec<String>>(),
         vec![
-            "coreio.rs",
             "env.rs",
             "errors.rs",
             "fs.rs",
@@ -84,7 +83,6 @@ fn test_walk_dir() -> Result<(), Error> {
     assert_eq!(
         results,
         vec![
-            "coreio.rs",
             "env.rs",
             "errors.rs",
             "fs.rs",
@@ -132,7 +130,6 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
     assert_eq!(
         results,
         vec![
-            "coreio.rs",
             "env.rs",
             "errors.rs",
             "fs.rs",
@@ -183,7 +180,6 @@ fn test_walk_dir_skip_scanning_specific_directories() -> Result<(), Error> {
     assert_eq!(
         results,
         vec![
-            "coreio.rs",
             "env.rs",
             "errors.rs",
             "fs.rs",

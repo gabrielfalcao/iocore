@@ -16,11 +16,11 @@ default = []
 test = []
 
 [dependencies]
-chrono = { version = "0.4.31", features = ["alloc", "serde"] }
+chrono = { version = "0.4.31", features = ["serde"] }
 glob = "0.3.1"
 lazy_static = "1.4.0"
 sanitation = { version = "1.0.1" }
-serde = { version = "1.0.219", features = ["derive", "alloc", "rc"] }
+serde = { version = "1.0.219", features = ["derive"] }
 regex = { version = "1.10.3", features = ["use_std"] }
 thread-groups = { version = "0.1.1" }
 filetime = "0.2.25"
@@ -29,6 +29,7 @@ trilobyte = { version = "0.1.0" }
 [dev-dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
 iocore-test = { path = "./iocore-test" }
+serde_json = { version = "1.0.140" }
 
 [lib]
 name = "iocore"
