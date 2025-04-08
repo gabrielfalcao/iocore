@@ -1,7 +1,7 @@
 [package]
 name = "iocore"
-version = "2.0.0"
-edition = "2024"
+version = "2.0.1"
+edition = "2021"
 description = "I/O Core Utilities"
 documentation = "https://docs.rs/iocore"
 readme = "README.md"
@@ -24,7 +24,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 regex = { version = "1.10.3", features = ["use_std"] }
 thread-groups = { version = "0.1.1" }
 filetime = "0.2.25"
-trilobyte = { version = "0.1.0" }
+trilobyte = { version = "0.1.1" }
 
 [dev-dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
