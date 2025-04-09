@@ -570,12 +570,10 @@ impl Code {
             std::io::ErrorKind::ConnectionAborted => Code::ECONNABORTED,
             std::io::ErrorKind::ConnectionRefused => Code::ECONNREFUSED,
             std::io::ErrorKind::ConnectionReset => Code::ENETRESET,
-            std::io::ErrorKind::CrossesDevices => Code::EXDEV,
             std::io::ErrorKind::Deadlock => Code::EDEADLK,
             std::io::ErrorKind::DirectoryNotEmpty => Code::ENOTEMPTY,
             std::io::ErrorKind::ExecutableFileBusy => Code::EBUSY, // ETXTBSY
             std::io::ErrorKind::FileTooLarge => Code::EFBIG,
-            std::io::ErrorKind::QuotaExceeded => Code::EDQUOT,
             std::io::ErrorKind::HostUnreachable => Code::EHOSTUNREACH,
             std::io::ErrorKind::Interrupted => Code::EINTR,
             std::io::ErrorKind::InvalidData => Code::EINVAL,
