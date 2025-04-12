@@ -52,7 +52,9 @@ pub use fs::size::{ByteUnit, Size};
 pub use fs::Path;
 pub use io::buffer::FileBuffer;
 pub use io::error::Code;
-pub use sh::{shell_command, shell_command_string_output, shell_command_vec_output};
+pub use sh::{
+    shell_command, shell_command_stdout, shell_command_string_output, shell_command_vec_output,
+};
 pub use sys::{
     best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
     safe_string, Group, User,

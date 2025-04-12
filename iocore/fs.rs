@@ -63,7 +63,6 @@ pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 pub struct Path {
     lock: RwLock<String>,
 }
-
 impl Path {
     pub fn new(path: impl std::fmt::Display) -> Path {
         match Path::safe(path) {
@@ -94,6 +93,7 @@ impl Path {
         }
         Ok(Path::raw(string))
     }
+
     /// `canonical` is a shortcut to [`new`] followed by [`try_canonicalize`]
     ///
     /// Example
@@ -131,6 +131,16 @@ impl Path {
                 .unwrap_or_else(|_| ".".to_string()),
         )
         .try_canonicalize()
+    }
+
+    /// `tmp` returns a [`Path`] to a temporary directory via `mktemp`
+    pub fn tmp() -> Path {
+        Path::raw(crate::sh::shell_command_stdout("mktemp -qd", ".").unwrap().trim())
+    }
+
+    /// `tmp` returns a [`Path`] to a temporary file via `mktemp`
+    pub fn tmp_file() -> Path {
+        Path::raw(crate::sh::shell_command_stdout("mktemp -q", ".").unwrap().trim())
     }
 
     /// `tildify` returns a new [`Path`] where the current unix user HOME is replaced with "~/"

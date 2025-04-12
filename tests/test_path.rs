@@ -460,3 +460,20 @@ fn test_writable_directory() -> Result<()> {
     assert_eq!(Path::writable_directory(test_directory.to_string()), Ok(test_directory));
     Ok(())
 }
+
+#[test]
+fn test_path_tmp_file() -> Result<()> {
+    let tmp = Path::tmp_file();
+    assert_eq!(tmp.exists(), true);
+    assert_eq!(tmp.is_file(), true);
+    Ok(())
+}
+
+
+#[test]
+fn test_path_tmp() -> Result<()> {
+    let tmp = Path::tmp();
+    assert_eq!(tmp.exists(), true);
+    assert_eq!(tmp.is_directory(), true);
+    Ok(())
+}

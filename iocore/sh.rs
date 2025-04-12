@@ -2,7 +2,7 @@ use std::process::{Command, Stdio};
 
 use sanitation::SString;
 
-use crate::errors::Result;
+use crate::errors::{Error, Result};
 use crate::fs::Path;
 
 /// Utility function to spawn a command from a string rather than
@@ -65,4 +65,21 @@ pub fn shell_command(command: impl std::fmt::Display, current_dir: impl Into<Pat
     let output = child.wait_with_output()?;
     let status = output.status.code().unwrap_or_default();
     Ok(status)
+}
+
+/// `shell_command_stdout` executes the given command and returns the
+/// stdout of the process.
+pub fn shell_command_stdout(
+    command: impl std::fmt::Display,
+    current_dir: impl Into<Path>,
+) -> Result<String> {
+    let (exit_code, stdout, _) = shell_command_string_output(command.to_string(), current_dir)?;
+    match exit_code {
+        0 => Ok(stdout),
+        _ => Err(Error::SubprocessError(format!(
+            "command {:#?} failed with {}",
+            command.to_string(),
+            exit_code
+        ))),
+    }
 }
