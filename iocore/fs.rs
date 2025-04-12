@@ -64,6 +64,8 @@ pub struct Path {
     lock: RwLock<String>,
 }
 impl Path {
+
+    /// `new` creates a new [`Path`] expanding `~` to the current unix user HOME.
     pub fn new(path: impl std::fmt::Display) -> Path {
         match Path::safe(path) {
             Ok(path) => path,
@@ -791,6 +793,7 @@ impl Path {
         self.absolute().unwrap_or_else(|_| self.clone())
     }
 
+    /// `canonicalize` returns a canonical path, resolving symlinks.
     pub fn canonicalize(&self) -> Result<Path, Error> {
         let name = self.name();
         match self.expand()?.path().canonicalize() {
@@ -804,6 +807,8 @@ impl Path {
         }
     }
 
+    /// `try_canonicalize` returns a canonical path, resolving
+    /// symlinks, returns the caller path in case of error.
     pub fn try_canonicalize(&self) -> Path {
         match self.canonicalize() {
             Ok(path) => path,

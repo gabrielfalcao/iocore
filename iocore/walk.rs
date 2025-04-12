@@ -173,17 +173,17 @@ pub fn glob(pattern: impl std::fmt::Display) -> Result<Vec<Path>, Error> {
 }
 
 /// `WalkProgressHandler` trait defines a protocol outlining the
-/// behavior of [`iocore::walk_dir`] in terms of whether to
+/// behavior of [`walk_dir`] in terms of whether to
 /// aggregate paths in the final result, whether to scan a directory
-/// and whether an error should cause [`iocore::walk_dir`] to
+/// and whether an error should cause [`walk_dir`] to
 /// fail.
 pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
     /// `path_matching` is called to determine whether
-    /// [`iocore::walk_dir`] should aggregate the given `path`
+    /// [`walk_dir`] should aggregate the given `path`
     /// argument in its final result.
     ///
     /// If the implementor returns [`std::result::Result::Err`] then
-    /// the error is handled by [`iocore::walkProgressHandler::error`] which
+    /// the error is handled by [`WalkProgressHandler::error`] which
     /// cascades the error all the way up to the initial call if
     /// [`Some(error)`] is returned.
     ///
@@ -194,19 +194,19 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
     /// `should_scan_directory` is only called when `path` argument is a directory.
     ///
     /// Implementors return [`Ok(false)`] to indicate that
-    /// [`iocore::walk_dir`] shall skip scanning directory.
+    /// [`walk_dir`] shall skip scanning directory.
     ///
     /// If the implementor returns [`std::result::Result::Err`] then
-    /// the error is handled by [`iocore::walkProgressHandler::error`] which
+    /// the error is handled by [`WalkProgressHandler::error`] which
     /// cascades the error all the way up to the initial call if
     /// [`Some(error)`] is returned.
     ///
     /// Default implementation always returns [`Ok(true)`].
     ///
     ///
-    /// > NOTE: [`iocore::walk_dir`] spawns (i.e.:
+    /// > NOTE: [`walk_dir`] spawns (i.e.:
     /// > [`thread_groups::ThreadGroup::spawn`]) a sub thread calling
-    /// > [`iocore::walk_dir`] (in assynchronously recursively
+    /// > [`walk_dir`] (in assynchronously recursively
     /// > fashion) with the directory referenced in the `path` argument
     /// > which is then "joined" (via
     /// > [`thread_groups::ThreadGroup::results`]) at the end of each
@@ -215,7 +215,7 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
         Ok(path.is_directory())
     }
     /// `error` is called when [`Err(iocore::Error)`] arises anywhere
-    /// within a [`iocore::walk_dir`] call so that implementors
+    /// within a [`walk_dir`] call so that implementors
     /// can choose how to handle errors.
     ///
     /// Default implementation always returns [`Some(error)`].
@@ -225,7 +225,7 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
 }
 
 /// `NoopProgressHandler` is the builtin implementation of
-/// [`iocore::WalkProgressHandler`] which aggregates results insofar
+/// [`WalkProgressHandler`] which aggregates results insofar
 /// as the `path` given to `path_matching` exists at the moment the
 /// calling thread calls it.
 #[derive(Clone, Eq, PartialEq)]
