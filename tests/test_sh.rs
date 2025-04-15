@@ -5,7 +5,7 @@ use sanitation::SString;
 fn test_shell_command_vec_output() {
     let (exit_code, out, err) = shell_command_vec_output("echo 'out'", ".").unwrap();
 
-    assert_eq!(SString::new(&out).unchecked_safe(), "'out'\n");
+    assert_eq!(SString::new(&out).unchecked_safe(), "out\n");
     assert_eq!(exit_code, 0);
     assert_eq!(SString::new(&err).unchecked_safe(), "");
 
@@ -33,9 +33,8 @@ fn test_shell_command_string_output() {
 
 #[test]
 fn test_shell_command() {
-    let exit_code = shell_command("test 4 -eq 2", ".").unwrap();
-
-    assert_eq!(exit_code, 1);
+    let exit_code = shell_command("test 'a z' == \"a z\"", ".").unwrap();
+    assert_eq!(exit_code, 0);
 }
 
 

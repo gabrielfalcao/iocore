@@ -13,11 +13,7 @@ pub fn shell_command_vec_output(
     command: impl std::fmt::Display,
     current_dir: impl Into<Path>,
 ) -> Result<(i32, Vec<u8>, Vec<u8>)> {
-    let args = command
-        .to_string()
-        .split(" ")
-        .map(|arg| arg.trim().to_string())
-        .collect::<Vec<String>>();
+    let args = split_args(&command.to_string());
     let mut cmd = Command::new(args[0].clone());
     let cmd = cmd.current_dir(Into::<Path>::into(current_dir));
     let cmd = cmd.args(args[1..].to_vec());
@@ -50,11 +46,7 @@ pub fn shell_command_string_output(
 /// array of arguments and returns the exit code. Stdout and Stderr
 /// are inherited from the current process.
 pub fn shell_command(command: impl std::fmt::Display, current_dir: impl Into<Path>) -> Result<i32> {
-    let args = command
-        .to_string()
-        .split(" ")
-        .map(|arg| arg.trim().to_string())
-        .collect::<Vec<String>>();
+    let args = split_args(&command.to_string());
     let mut cmd = Command::new(args[0].clone());
     let cmd = cmd.current_dir(Into::<Path>::into(current_dir));
     let cmd = cmd.args(args[1..].to_vec());
@@ -81,5 +73,12 @@ pub fn shell_command_stdout(
             command.to_string(),
             exit_code
         ))),
+    }
+}
+
+fn split_args(args: &str) -> Vec<String> {
+    match shlex::split(args) {
+        Some(args) => args.iter().map(|arg| arg.to_string()).collect::<Vec<String>>(),
+        None => vec![args.to_string()],
     }
 }
