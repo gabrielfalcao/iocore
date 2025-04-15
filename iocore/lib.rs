@@ -49,7 +49,7 @@ pub use fs::path_utils::{
 };
 pub use fs::perms::PathPermissions;
 pub use fs::size::{ByteUnit, Size};
-pub use fs::Path;
+pub use fs::{Path, ROOT_PATH_STR, USERS_PATH};
 pub use io::buffer::FileBuffer;
 pub use io::error::Code;
 pub use sh::{
@@ -57,7 +57,7 @@ pub use sh::{
 };
 pub use sys::{
     best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
-    safe_string, Group, User, XPC
+    safe_string, Group, User, XPC,
 };
 pub use walk::{
     glob, walk_dir, walk_globs, NoopProgressHandler, WalkDirDepth, WalkProgressHandler,

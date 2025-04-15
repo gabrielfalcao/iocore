@@ -43,6 +43,7 @@ use crate::errors::Error;
 use crate::{FileSystemError, PathStatus, PathTimestamps, PathType};
 
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
+pub const USERS_PATH: &'static str = if cfg!(target_os = "macos") { "/Users" } else { "/home" };
 pub const ROOT_PATH_STR: &'static str = MAIN_SEPARATOR_STR;
 
 /// `Path` is a data structure representing a path in unix filesystems
@@ -1117,7 +1118,7 @@ impl Path {
         self.clone()
     }
 
-    /// Matcheses the path with given regex pattern
+    /// Matches the path with given regex pattern
     ///
     /// Example
     /// ```
@@ -1158,6 +1159,9 @@ impl Path {
                 pattern, &haystack
             ))),
         }
+    }
+    pub fn within_users_path(&self) -> bool {
+        self.try_canonicalize().to_string().starts_with(USERS_PATH)
     }
 }
 
@@ -1456,4 +1460,35 @@ mod tests {
         assert_eq!(full, "/Users/stevejobs/");
         assert_eq!(parts, vec!["stevejobs"],);
     }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_users_path() {
+        assert_eq!(crate::USERS_PATH, "/Users");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_users_path() {
+        assert_eq!(crate::USERS_PATH, "/home");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_path_within_users_path() {
+        let path = Path::raw("/Users/stevejobs/darwin");
+        assert_eq!(path.within_users_path(), true);
+        let path = Path::raw("/private/etc");
+        assert_eq!(path.within_users_path(), false);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_path_within_users_path() {
+        let path = Path::raw("/home/linustorvalds/linux");
+        assert_eq!(path.within_users_path(), true);
+        let path = Path::raw("/opt/lib");
+        assert_eq!(path.within_users_path(), false);
+    }
+
 }
