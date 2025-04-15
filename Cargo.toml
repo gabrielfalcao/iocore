@@ -19,7 +19,7 @@ test = []
 chrono = { version = "0.4.31", features = ["serde"] }
 glob = "0.3.1"
 lazy_static = "1.4.0"
-sanitation = { version = "1.0.2" }
+sanitation = { version = "1.0.3" }
 serde = { version = "1.0.219", features = ["derive"] }
 regex = { version = "1.10.3", features = ["use_std"] }
 thread-groups = { version = "0.1.2" }

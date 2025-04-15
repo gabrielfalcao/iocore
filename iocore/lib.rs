@@ -24,7 +24,7 @@
 #![cfg(target_family = "unix")]
 #[macro_use]
 extern crate lazy_static;
-pub(crate) mod env;
+pub mod env;
 pub(crate) mod errors;
 pub(crate) mod fs;
 pub(crate) mod io;
@@ -57,13 +57,14 @@ pub use sh::{
 };
 pub use sys::{
     best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home, parse_u32,
-    safe_string, Group, User,
+    safe_string, Group, User, XPC
 };
 pub use walk::{
     glob, walk_dir, walk_globs, NoopProgressHandler, WalkDirDepth, WalkProgressHandler,
 };
 
 lazy_static! {
+    pub static ref XPC_INFO: XPC = XPC::from_env();
     pub static ref USER: User = User::id().unwrap_or_default();
     pub static ref TILDE: String = format!("{}/", USER.home().expect("current UNIX user HOME"));
 }

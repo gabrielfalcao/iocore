@@ -2,10 +2,11 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 
 use regex::Regex;
-use sanitation::SString;
+use sanitation::{from_hex, SBoolean, SString};
 
-use crate::env::var as env_var;
-use crate::Error;
+use crate::{env_var, Error};
+
+pub const DEFAULT_UID: u32 = if cfg!(target_os = "macos") { 501 } else { 1001 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Group {
@@ -28,7 +29,7 @@ impl User {
     }
 
     pub fn from_env() -> User {
-        let uid = env_var_uid().unwrap();
+        let uid = env_var_uid().unwrap_or_else(|_| DEFAULT_UID);
         let name = env_var_user();
         User {
             uid,
@@ -47,8 +48,8 @@ impl User {
         .unwrap();
         let gexpr = Regex::new(r"(\d+)([(]([^)]+)[)])").unwrap();
         if let Some(captures) = uexpr.captures(&stdout) {
-            let gid = parse_u32(captures.name("gid").map(|s| s.as_str()).unwrap(), "gid")?;
-            let uid = parse_u32(captures.name("uid").map(|s| s.as_str()).unwrap(), "uid")?;
+            let gid = parse_u32(captures.name("gid").map(|s| s.as_str()).unwrap(), "gid").unwrap();
+            let uid = parse_u32(captures.name("uid").map(|s| s.as_str()).unwrap(), "uid").unwrap();
             let name = captures.name("name").map(|s| s.as_str().to_string()).unwrap();
             let group = captures.name("group").map(|s| s.as_str().to_string()).unwrap();
             let groups = gexpr
@@ -60,7 +61,7 @@ impl User {
                     let name = g[2].to_string();
                     Group { gid, name }
                 })
-                .collect::<Vec<Group>>(); //(|captures|captures.extract()).collect::<Vec<_>>(),
+                .collect::<Vec<Group>>();
             Ok(User {
                 uid,
                 gid: Some(gid),
@@ -193,7 +194,7 @@ fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Error
 fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Error> {
     let key = key.unwrap_or("HOME".to_string());
     Ok(path_owned_expectedly(
-        crate::Path::directory(env_var(&key)?).map_err(|e| {
+        crate::Path::directory(crate::env::var(&key)?).map_err(|e| {
             Error::SystemError(format!(
                 "fetching home directory from environment variable {:#?}: {}",
                 key, e
@@ -205,10 +206,10 @@ fn env_var_home(user: &str, uid: u32, key: Option<String>) -> Result<String, Err
     .to_string())
 }
 fn env_var_uid() -> Result<u32, Error> {
-    Ok(parse_u32(env_var("UID")?, "UID environment variable")?)
+    Ok(parse_u32(env_var!("UID"), "UID environment variable")?)
 }
 fn env_var_user() -> String {
-    env_var("USER").unwrap_or_default()
+    env_var!("USER")
 }
 fn path_owned_expectedly(path: crate::Path, user: &str, uid: u32) -> Result<crate::Path, Error> {
     if path.uid() == uid {
@@ -248,7 +249,7 @@ pub fn guess_unix_home(user: impl Into<String>) -> Result<String, Error> {
 pub fn best_guess_home(user: impl Into<String>) -> Result<String, Error> {
     let user = user.into();
     use crate::fs::Path;
-    Ok(if let Ok(home) = env_var("HOME") {
+    Ok(if let Ok(home) = crate::env::var("HOME") {
         Path::directory(home.trim().to_string()).map(|p| p.to_string()).map_err(|e| {
             Error::SafetyError(format!(
                 "environment variable HOME points to a non-accessible path {:#?}: {}",
@@ -262,5 +263,45 @@ pub fn best_guess_home(user: impl Into<String>) -> Result<String, Error> {
 impl Default for User {
     fn default() -> User {
         User::from_env()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct XPC {
+    pub null_bootstrap: Option<bool>,
+    pub flags: Option<Vec<u8>>,
+    pub service_name: Option<String>,
+}
+impl XPC {
+    pub fn from_env() -> XPC {
+        let null_bootstrap = match crate::env::var("XPC_NULL_BOOTSTRAP") {
+            Ok(nb) => match u8::from_str_radix(&nb, 10) {
+                Ok(nb) => {
+                    eprintln!("[warning] XPC_NULL_BOOTSTRAP environment variable is set");
+                    Some(SBoolean::new(nb).value())
+                },
+                Err(_) => None,
+            },
+            Err(_) => None,
+        };
+        let flags = match crate::env::var("XPC_FLAGS") {
+            Ok(flags) => match from_hex(&flags) {
+                Ok(flags) => {
+                    eprintln!("[warning] XPC_FLAGS environment variable is set");
+                    Some(flags)
+                },
+                Err(_) => None,
+            },
+            Err(_) => None,
+        };
+        let service_name = match crate::env::var("XPC_SERVICE_NAME") {
+            Ok(service_name) => Some(service_name),
+            Err(_) => None,
+        };
+        XPC {
+            null_bootstrap,
+            flags,
+            service_name,
+        }
     }
 }

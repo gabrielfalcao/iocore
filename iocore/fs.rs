@@ -64,7 +64,6 @@ pub struct Path {
     lock: RwLock<String>,
 }
 impl Path {
-
     /// `new` creates a new [`Path`] expanding `~` to the current unix user HOME.
     pub fn new(path: impl std::fmt::Display) -> Path {
         match Path::safe(path) {
@@ -1117,7 +1116,51 @@ impl Path {
         self.delete().map(|_| ()).unwrap_or_default();
         self.clone()
     }
+
+    /// Matcheses the path with given regex pattern
+    ///
+    /// Example
+    /// ```
+    /// let path = Path::raw("/Users/stevejobs/Library/Preferences");
+    /// let result = path.matches_regex(r"^/Users/(?<user>[^/]+)/");
+    /// assert_eq!(result, Ok(true))
+    /// ```
+    pub fn matches_regex(&self, pattern: &str) -> crate::Result<bool> {
+        let re = regex::Regex::new(pattern)?;
+        Ok(re.is_match(&self.to_string()))
+    }
+
+    /// Searches the path with given regex pattern
+    ///
+    /// Example
+    /// ```
+    /// let path = Path::raw("/Users/stevejobs/Library/Preferences");
+    /// let result = path.search_regex(r"^/Users/(?<user>[^/]+)/");
+    /// assert!(result.is_ok());
+    /// let (full, parts) = result.unwrap();
+    /// assert_eq!(full, "/Users/stevejobs/");
+    /// assert_eq!(parts, vec!["stevejobs"],);
+    /// ```
+    pub fn search_regex(&self, pattern: &str) -> crate::Result<(String, Vec<String>)> {
+        let re = regex::Regex::new(pattern)?;
+        let haystack = self.to_string();
+        match re.captures(&haystack) {
+            Some(caps) => {
+                let mut parts = Vec::<String>::new();
+                let full = caps.get(0).unwrap().as_str().to_string();
+                for j in 1..(caps.len()) {
+                    parts.push(caps.get(j).unwrap().as_str().to_string());
+                }
+                Ok((full, parts))
+            },
+            None => Err(Error::PatternMismatch(format!(
+                "regex '{}' does not match path '{}'",
+                pattern, &haystack
+            ))),
+        }
+    }
 }
+
 impl PartialEq for Path {
     fn eq(&self, other: &Self) -> bool {
         self.exists() == other.exists()
@@ -1312,31 +1355,6 @@ impl From<&std::path::Path> for Path {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::Path;
-    #[test]
-    fn test_path_relative_to() {
-        let iocore_fs_path = Path::raw(file!());
-        let iocore_lib_path = Path::raw(file!()).parent().unwrap();
-        assert_eq!(iocore_fs_path.relative_to(&iocore_lib_path).to_string(), "fs.rs");
-        assert_eq!(iocore_lib_path.relative_to(&iocore_fs_path).to_string(), "../");
-    }
-    #[test]
-    fn test_path_relative_to_cwd() {
-        let iocore_fs_path = Path::raw(file!());
-        assert_eq!(iocore_fs_path.relative_to_cwd().to_string(), "iocore/fs.rs");
-    }
-
-    #[test]
-    fn test_serialize_and_deserialize() {
-        let path = Path::raw(file!()).relative_to_cwd();
-        let serialized = serde_json::to_string(&path).unwrap();
-        assert_eq!(serialized, "\"iocore/fs.rs\"");
-        assert_eq!(serde_json::from_str::<Path>(serialized.as_str()).unwrap(), path);
-    }
-}
-
 impl Serialize for Path {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1396,5 +1414,46 @@ impl<'de> Visitor<'de> for PathVisitor {
         E: serde::de::Error,
     {
         Ok(Path::raw(value.as_str()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Path;
+    #[test]
+    fn test_path_relative_to() {
+        let iocore_fs_path = Path::raw(file!());
+        let iocore_lib_path = Path::raw(file!()).parent().unwrap();
+        assert_eq!(iocore_fs_path.relative_to(&iocore_lib_path).to_string(), "fs.rs");
+        assert_eq!(iocore_lib_path.relative_to(&iocore_fs_path).to_string(), "../");
+    }
+    #[test]
+    fn test_path_relative_to_cwd() {
+        let iocore_fs_path = Path::raw(file!());
+        assert_eq!(iocore_fs_path.relative_to_cwd().to_string(), "iocore/fs.rs");
+    }
+
+    #[test]
+    fn test_serialize_and_deserialize() {
+        let path = Path::raw(file!()).relative_to_cwd();
+        let serialized = serde_json::to_string(&path).unwrap();
+        assert_eq!(serialized, "\"iocore/fs.rs\"");
+        assert_eq!(serde_json::from_str::<Path>(serialized.as_str()).unwrap(), path);
+    }
+
+    #[test]
+    fn test_matches_regex() {
+        let path = Path::raw("/Users/stevejobs/Library/Preferences");
+        let result = path.matches_regex(r"^/Users/(?<user>[^/]+)/");
+        assert_eq!(result, Ok(true))
+    }
+    #[test]
+    fn test_search_regex() {
+        let path = Path::raw("/Users/stevejobs/Library/Preferences");
+        let result = path.search_regex(r"^/Users/(?<user>[^/]+)/");
+        assert!(result.is_ok());
+        let (full, parts) = result.unwrap();
+        assert_eq!(full, "/Users/stevejobs/");
+        assert_eq!(parts, vec!["stevejobs"],);
     }
 }

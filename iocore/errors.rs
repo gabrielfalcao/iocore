@@ -29,6 +29,7 @@ pub enum Error {
     ThreadGroupError(String),
     ShellCommandError(String),
     ParseError(String),
+    PatternMismatch(String),
 }
 
 impl std::fmt::Display for Error {
@@ -64,6 +65,7 @@ impl std::fmt::Display for Error {
             Error::ThreadGroupError(e) => write!(f, "ThreadGroupError: {}", e),
             Error::ShellCommandError(e) => write!(f, "ShellCommandError: {}", e),
             Error::ParseError(e) => write!(f, "ParseError: {}", e),
+            Error::PatternMismatch(e) => write!(f, "PatternMismatch: {}", e),
         }
     }
 }
@@ -131,6 +133,16 @@ impl From<thread_groups::Error> for Error {
 impl From<sanitation::Error<'_>> for Error {
     fn from(e: sanitation::Error<'_>) -> Self {
         Error::SafetyError(e.to_string())
+    }
+}
+impl From<std::num::ParseIntError> for Error {
+    fn from(e: std::num::ParseIntError) -> Self {
+        Error::ParseError(e.to_string())
+    }
+}
+impl From<regex::Error> for Error {
+    fn from(e: regex::Error) -> Self {
+        Error::ParseError(e.to_string())
     }
 }
 

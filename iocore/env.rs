@@ -29,3 +29,23 @@ pub fn args_from_string(args: impl std::fmt::Display) -> Vec<String> {
         .map(|args| args.to_string())
         .collect::<Vec<String>>()
 }
+/// `env_var` macro calls `iocore::env::var`, returns empty string and prints warning to stderr if the given environment variable is not set.
+///
+/// Example:
+///
+/// ```
+/// use iocore::env_var;
+/// assert_eq!(env_var!("UID"), 501);
+/// ```
+#[macro_export]
+macro_rules! env_var {
+    ($name:expr) => {{
+        match $crate::env::var($name) {
+            Ok(var) => var,
+            Err(error) => {
+                eprintln!("[warning] {}", error.to_string());
+                String::new()
+            }
+        }
+    }}
+}
