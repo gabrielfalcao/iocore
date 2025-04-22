@@ -300,6 +300,15 @@ impl Path {
         }
     }
 
+    pub fn executable_file(path: impl Into<Path>) -> Result<Path, Error> {
+        let path = path.into();
+        if !path.executable() {
+            Err((FileSystemError::NonExecutablePath, path).into())
+        } else {
+            Ok(path)
+        }
+    }
+
     pub fn writable_directory(path: impl Into<Path>) -> Result<Path, Error> {
         let path = path.into();
         match path.status() {
@@ -563,74 +572,40 @@ impl Path {
         self.permissions().into_u32()
     }
 
-    pub fn owner_executable(&self) -> bool {
-        self.mode() & 0b001000000 == 1
-    }
-
-    pub fn owner_writable(&self) -> bool {
-        self.mode() & 0b010000000 == 1
-    }
-
-    pub fn owner_readable(&self) -> bool {
-        self.mode() & 0b100000000 == 1
-    }
-
-    pub fn group_executable(&self) -> bool {
-        self.mode() & 0b000001000 == 1
-    }
-
-    pub fn group_writable(&self) -> bool {
-        self.mode() & 0b000010000 == 1
-    }
-
-    pub fn group_readable(&self) -> bool {
-        self.mode() & 0b000100000 == 1
-    }
-
-    pub fn others_executable(&self) -> bool {
-        self.mode() & 0b000000001 == 1
-    }
-
-    pub fn others_writable(&self) -> bool {
-        self.mode() & 0b000000010 == 1
-    }
-
-    pub fn others_readable(&self) -> bool {
-        self.mode() & 0b000000100 == 1
-    }
-
     pub fn executable(&self) -> bool {
-        self.owner_executable() || self.group_executable()
-    }
-
-    pub fn writable(&self) -> bool {
-        self.owner_writable() || self.group_writable()
+        self.permissions().executable()
     }
 
     pub fn readable(&self) -> bool {
-        self.owner_readable() || self.group_readable()
+        self.permissions().readable()
+    }
+
+    pub fn writable(&self) -> bool {
+        self.permissions().writable()
     }
 
     pub fn set_mode(&mut self, mode: u32) -> Result<Path, Error> {
-        let path = self.clone();
-        let meta = std::fs::metadata(self.path()).map_err(|error| {
+        Ok(self.set_permissions(&PathPermissions::from_u32(mode)?)?)
+    }
+    pub fn set_permissions(&mut self, permissions: &PathPermissions) -> Result<Path, Error> {
+        let info = std::fs::metadata(self.path()).map_err(|error| {
             Error::FileSystemError(format!(
                 "obtaining metadata of {:#?}: {}",
                 self.to_string(),
                 error
             ))
         })?;
-        let mut permissions = meta.permissions();
-        permissions.set_mode(mode);
-        std::fs::set_permissions(self.path(), permissions).map_err(|error| {
+        let mut info_permissions = info.permissions();
+        info_permissions.set_mode((*permissions).into());
+        std::fs::set_permissions(self.path(), info_permissions).map_err(|error| {
             Error::FileSystemError(format!(
-                "setting permissions {:o} of {:#?}: {}",
-                mode,
+                "setting permissions {} of {:#?}: {}",
+                permissions,
                 self.to_string(),
                 error
             ))
         })?;
-        Ok(path)
+        Ok(self.clone())
     }
 
     pub fn timestamps(&self) -> Result<PathTimestamps, Error> {
@@ -1263,6 +1238,7 @@ impl Path {
             ))),
         }
     }
+
     pub fn within_users_path(&self) -> bool {
         self.try_canonicalize().to_string().starts_with(USERS_PATH)
     }

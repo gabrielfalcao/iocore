@@ -478,32 +478,46 @@ fn test_path_permissions() -> Result<()> {
         PathPermissions {
             user: TriloByte::from(0b0110),
             group: TriloByte::from(0b100),
-            others: TriloByte::from(0b00),
+            other: TriloByte::from(0b00),
         }
     );
 
     assert_eq!(file_mode_640.mode(), 0o640);
     assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
+
+    assert_eq!(file_mode_640.readable(), true);
+    assert_eq!(file_mode_640.writable(), true);
+    assert_eq!(file_mode_640.executable(), false);
+    assert_eq!(file_mode_640.permissions().readable(), true);
+    assert_eq!(file_mode_640.permissions().writable(), true);
+    assert_eq!(file_mode_640.permissions().executable(), false);
+
+    assert_eq!(file_mode_640.permissions().user().writable(), true);
+    assert_eq!(file_mode_640.permissions().user().readable(), true);
+    assert_eq!(file_mode_640.permissions().user().executable(), false);
+
+    assert_eq!(file_mode_640.permissions().group().writable(), false);
+    assert_eq!(file_mode_640.permissions().group().readable(), true);
+    assert_eq!(file_mode_640.permissions().group().executable(), false);
+
+    assert_eq!(file_mode_640.permissions().other().writable(), false);
+    assert_eq!(file_mode_640.permissions().other().readable(), false);
+    assert_eq!(file_mode_640.permissions().other().executable(), false);
     Ok(())
 }
 
 #[test]
+fn test_path_set_mode() -> Result<()> {
+    let mut file = Path::tmp_file();
+    file.set_mode(0o755)?;
+    assert_eq!(format!("{:o}", file.mode()), "755");
+    Ok(())
+}
+#[test]
 fn test_path_set_permissions() -> Result<()> {
-    let file_mode_640 =
-        path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
-    let metadata = std::fs::metadata(file_mode_640.path())?;
+    let mut file = Path::tmp_file();
 
-    assert_eq!(format!("{:o}", metadata.mode()), "100640");
-    assert_eq!(
-        PathPermissions::from_u32(metadata.mode())?,
-        PathPermissions {
-            user: TriloByte::from(0b0110),
-            group: TriloByte::from(0b100),
-            others: TriloByte::from(0b00),
-        }
-    );
-
-    assert_eq!(file_mode_640.mode(), 0o640);
-    assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
+    file.set_permissions(&PathPermissions::from_u32(0o777)?)?;
+    assert_eq!(format!("{:o}", file.mode()), "777");
     Ok(())
 }
