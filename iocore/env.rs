@@ -35,7 +35,7 @@ pub fn args_from_string(args: impl std::fmt::Display) -> Vec<String> {
 ///
 /// ```
 /// use iocore::env_var;
-/// assert_eq!(env_var!("UID"), 501);
+/// assert_eq!(env_var!("TZ"), "UTC");
 /// ```
 #[macro_export]
 macro_rules! env_var {

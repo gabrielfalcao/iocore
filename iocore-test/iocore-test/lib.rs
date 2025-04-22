@@ -32,7 +32,7 @@ macro_rules! path_to_test_file {
 #[macro_export]
 macro_rules! folder_path {
     () => {{
-        let path = Path::raw(file!())
+        let path = iocore::Path::raw(file!())
             .parent()
             .expect(&format!("{:#?} has no parent folder!!", file!()));
         path
@@ -59,7 +59,7 @@ macro_rules! directory_path {
 #[macro_export]
 macro_rules! test_folder_parent_path {
     ($name:expr) => {{
-        let path = Path::raw(file!())
+        let path = iocore::Path::raw(file!())
             .parent()
             .expect(&format!("parent directory of {:#?}", file!()));
         let path = path.join($name);

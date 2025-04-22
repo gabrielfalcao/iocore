@@ -208,27 +208,6 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_
 }
 
 #[test]
-fn test_path_permissions() -> Result<()> {
-    let file_mode_640 =
-        path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
-    let metadata = std::fs::metadata(file_mode_640.path())?;
-
-    assert_eq!(format!("{:o}", metadata.mode()), "100640");
-    assert_eq!(
-        PathPermissions::from_u32(metadata.mode())?,
-        PathPermissions {
-            user: TriloByte::from(0b0110),
-            group: TriloByte::from(0b100),
-            others: TriloByte::from(0b00),
-        }
-    );
-
-    assert_eq!(file_mode_640.mode(), 0o640);
-    assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
-    Ok(())
-}
-
-#[test]
 fn test_path_timestamps() -> Result<()> {
     let modified_path_datetime =
         PathDateTime::parse_from_str("2025-03-18T23:49:43.445802000Z", "%Y-%m-%dT%H:%M:%S.%fZ")?;
@@ -469,11 +448,62 @@ fn test_path_tmp_file() -> Result<()> {
     Ok(())
 }
 
-
 #[test]
 fn test_path_tmp() -> Result<()> {
     let tmp = Path::tmp();
     assert_eq!(tmp.exists(), true);
     assert_eq!(tmp.is_directory(), true);
+    Ok(())
+}
+
+#[test]
+fn test_path_canonicalize() -> Result<()> {
+    assert_eq!(
+        Path::raw("~").canonicalize()?,
+        Path::raw(iocore::USERS_PATH).join(&iocore::User::id()?.name)
+    );
+    Ok(())
+}
+
+
+#[test]
+fn test_path_permissions() -> Result<()> {
+    let file_mode_640 =
+        path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
+    let metadata = std::fs::metadata(file_mode_640.path())?;
+
+    assert_eq!(format!("{:o}", metadata.mode()), "100640");
+    assert_eq!(
+        PathPermissions::from_u32(metadata.mode())?,
+        PathPermissions {
+            user: TriloByte::from(0b0110),
+            group: TriloByte::from(0b100),
+            others: TriloByte::from(0b00),
+        }
+    );
+
+    assert_eq!(file_mode_640.mode(), 0o640);
+    assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
+    Ok(())
+}
+
+#[test]
+fn test_path_set_permissions() -> Result<()> {
+    let file_mode_640 =
+        path_to_test_file!("test_path_permissions.640").write(&[])?.set_mode(0o640)?;
+    let metadata = std::fs::metadata(file_mode_640.path())?;
+
+    assert_eq!(format!("{:o}", metadata.mode()), "100640");
+    assert_eq!(
+        PathPermissions::from_u32(metadata.mode())?,
+        PathPermissions {
+            user: TriloByte::from(0b0110),
+            group: TriloByte::from(0b100),
+            others: TriloByte::from(0b00),
+        }
+    );
+
+    assert_eq!(file_mode_640.mode(), 0o640);
+    assert_eq!(file_mode_640.permissions(), PathPermissions::from_u32(metadata.mode())?);
     Ok(())
 }

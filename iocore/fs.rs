@@ -100,8 +100,10 @@ impl Path {
     ///
     /// Example
     /// ```
+    /// {
     /// use iocore::Path;
     /// assert_eq!(Path::canonical("~"), Path::new("~").try_canonicalize());
+    /// }
     /// ```
     pub fn canonical(path: impl std::fmt::Display) -> Path {
         Path::new(path).try_canonicalize()
@@ -352,9 +354,11 @@ impl Path {
     /// Example
     ///
     /// ```
+    /// {
     /// use iocore::Path;
     /// Path::new("tests/doctest-example").write(b"test").unwrap();
     /// assert_eq!(Path::raw("tests/doctest-example").read().unwrap(), "test");
+    /// }
     /// ```
     pub fn write(&self, contents: &[u8]) -> Result<Path, Error> {
         self.mkdir_parents()?;
@@ -940,6 +944,18 @@ impl Path {
         Ok(self.mkdir_parents()?.parent().unwrap())
     }
 
+    /// `mkdir` creates a path and all its parents if necessary
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let path = Path::tmp().join("sub-folder").join("sub-sub-folder");
+    /// assert_eq!(path.exists(), false);
+    /// assert_eq!(path.mkdir().unwrap(), path.clone());
+    /// assert_eq!(path.exists(), true);
+    /// }
+    /// ```
     pub fn mkdir(&self) -> Result<Path, Error> {
         if self.is_directory() {
             return Ok(self.clone());
@@ -966,6 +982,24 @@ impl Path {
         Ok(path)
     }
 
+    /// `list` returns a [`Vec<Path>`] of a folder.
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let path = Path::tmp();
+    /// let sub_items = vec![
+    ///     path.join("path-sub-folder-a").mkdir_unchecked(),
+    ///     path.join("path-sub-folder-b").mkdir_unchecked(),
+    ///     path.join("path-sub-folder-c").mkdir_unchecked(),
+    ///     path.join("path-file-a").write_unchecked(&[]),
+    ///     path.join("path-file-b").write_unchecked(&[]),
+    ///     path.join("path-file-c").write_unchecked(&[]),
+    /// ];
+    /// assert_eq!(path.list(), Ok(sub_items));
+    /// }
+    /// ```
     pub fn list(&self) -> Result<Vec<Path>, Error> {
         if !self.try_canonicalize().is_dir() {
             return Err(Error::ReadDirError(format!("{} is not a folder", &self)));
@@ -1098,21 +1132,84 @@ impl Path {
         Ok(self.clone())
     }
 
+    /// `mkdir_unchecked` calls [`Path::mkdir`] but dismisses any
+    /// errors and always returns the calling [`Path`]
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let path = Path::tmp().join("sub-folder").join("sub-sub-folder");
+    /// assert_eq!(path.exists(), false);
+    /// assert_eq!(path.mkdir_unchecked(), path);
+    /// assert_eq!(path.exists(), true);
+    /// }
+    /// ```
     pub fn mkdir_unchecked(&self) -> Path {
         self.mkdir().map(|_| ()).unwrap_or_default();
         self.clone()
     }
 
+    /// `mkdir_parents_unchecked` calls [`Path::mkdir_parents`] but
+    /// dismisses any errors and always returns the calling [`Path`]
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let parent = Path::tmp().join("sub-folder");
+    /// let path = parent.join("sub-sub-folder").join("sub-sub-sub-folder");
+    ///
+    /// assert_eq!(path.exists(), false);
+    /// assert_eq!(parent.exists(), false);
+    ///
+    /// assert_eq!(path.mkdir_parents_unchecked(), path);
+    ///
+    /// assert_eq!(path.exists(), false);
+    /// assert_eq!(parent.exists(), true);
+    /// }
+    /// ```
     pub fn mkdir_parents_unchecked(&self) -> Path {
         self.mkdir_parents().map(|_| ()).unwrap_or_default();
         self.clone()
     }
 
+    /// `write_unchecked` calls [`Path::write`] but dismisses any
+    /// errors and always returns the calling [`Path`]
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let path = Path::tmp_file();
+    /// assert_eq!(path.is_file(), true);
+    /// assert_eq!(path.exists(), true);
+    ///
+    /// assert_eq!(path.write_unchecked(path.to_string().as_bytes()), path);
+    /// assert_eq!(path.delete_unchecked(), path);
+    /// assert_eq!(path.exists(), false);
+    /// }
+    /// ```
     pub fn write_unchecked(&self, contents: &[u8]) -> Path {
         self.write(contents).map(|_| ()).unwrap_or_default();
         self.clone()
     }
 
+    /// `delete_unchecked` calls [`Path::delete`] but dismisses any
+    /// errors and always returns the calling [`Path`]
+    ///
+    /// Example
+    /// ```
+    /// {
+    /// use iocore::Path;
+    /// let path = Path::tmp();
+    /// assert_eq!(path.is_directory(), true);
+    /// assert_eq!(path.exists(), true);
+    ///
+    /// assert_eq!(path, path.delete_unchecked());
+    /// assert_eq!(path.exists(), false);
+    /// }
+    /// ```
     pub fn delete_unchecked(&self) -> Path {
         self.delete().map(|_| ()).unwrap_or_default();
         self.clone()
@@ -1122,9 +1219,12 @@ impl Path {
     ///
     /// Example
     /// ```
+    /// {
+    /// use iocore::Path;
     /// let path = Path::raw("/Users/stevejobs/Library/Preferences");
     /// let result = path.matches_regex(r"^/Users/(?<user>[^/]+)/");
     /// assert_eq!(result, Ok(true))
+    /// }
     /// ```
     pub fn matches_regex(&self, pattern: &str) -> crate::Result<bool> {
         let re = regex::Regex::new(pattern)?;
@@ -1135,12 +1235,15 @@ impl Path {
     ///
     /// Example
     /// ```
+    /// {
+    /// use iocore::Path;
     /// let path = Path::raw("/Users/stevejobs/Library/Preferences");
     /// let result = path.search_regex(r"^/Users/(?<user>[^/]+)/");
     /// assert!(result.is_ok());
     /// let (full, parts) = result.unwrap();
     /// assert_eq!(full, "/Users/stevejobs/");
     /// assert_eq!(parts, vec!["stevejobs"],);
+    /// }
     /// ```
     pub fn search_regex(&self, pattern: &str) -> crate::Result<(String, Vec<String>)> {
         let re = regex::Regex::new(pattern)?;
@@ -1490,5 +1593,4 @@ mod tests {
         let path = Path::raw("/opt/lib");
         assert_eq!(path.within_users_path(), false);
     }
-
 }

@@ -1,7 +1,7 @@
 use trilobyte::{high_water_mark_u8_to_trilobyte, TriloByte};
 
 /// `PathPermissions`
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Default)]
 pub struct PathPermissions {
     pub user: TriloByte,
     pub group: TriloByte,
@@ -118,5 +118,11 @@ mod tests {
             others: TriloByte::from(4),
         };
         assert_eq!(permissions.into_u32(), 0o754);
+    }
+
+    #[test]
+    fn test_permissions_set_user() {
+        let mut permissions = PathPermissions::default();
+        assert_eq!(permissions.to_string(), "000");
     }
 }
