@@ -155,7 +155,7 @@ pub fn safe_string(bytes: &[u8], short_description: &str) -> Result<String, Erro
         .map_err(|e| Error::SafetyError(format!("{} in converting {:#?}", e, short_description)))?)
 }
 
-fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Error> {
+pub fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Error> {
     for (n, line) in crate::Path::from(path).read_lines()?.iter().enumerate() {
         let location = format!("{}:{}", path, n + 1);
         if !line.starts_with(&format!("{}:", &name)) {
@@ -171,15 +171,15 @@ fn unix_user_info_home(path: &str, name: &str, uid: u32) -> Result<String, Error
         }
 
         return Ok(path_owned_expectedly(
-            crate::Path::directory(match fields.len() {
-                7 => fields[6],
-                10 => fields[8],
+            crate::Path::raw(match fields.len() {
+                7 => fields[5],
+                10 => fields[7],
                 e =>
                     return Err(Error::SystemError(format!(
                         "unexpected number of fields in {:#?} {}",
                         location, e
                     ))),
-            })?,
+            }),
             name,
             uid,
         )?

@@ -1,4 +1,5 @@
-use iocore::{guess_unix_home, var as env_var, User, *};
+use iocore::{guess_unix_home, unix_user_info_home, var as env_var, User, *};
+use iocore_test::path_to_test_file;
 
 #[cfg(target_os = "macos")]
 #[test]
@@ -100,5 +101,19 @@ fn test_user_from_id_cmd_string() -> Result<()> {
             }
         ]
     );
+    Ok(())
+}
+
+#[test]
+fn test_unix_user_info_home() -> Result<()> {
+    let passwd = path_to_test_file!("passwd.osx").write(
+        [
+            "root:*:0:0:System Administrator:/var/root:/bin/sh",
+            "daemon:*:1:1:System Services:/var/root:/usr/bin/false",
+            "_cvmsroot:*:212:212:CVMS Root:/var/empty:/usr/bin/false",
+        ]
+        .join("\n").as_bytes(),
+    )?;
+    assert_eq!(unix_user_info_home(passwd.to_string().as_str(), "root", 0)?, "/var/root");
     Ok(())
 }
