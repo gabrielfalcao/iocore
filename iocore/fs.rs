@@ -733,17 +733,15 @@ impl Path {
         }
     }
 
-    pub fn expand(&self) -> Result<Path, Error> {
+    /// `expand` checks whether the given path starts with "~/" or is
+    /// exactly equal to "~" then expands to [`User::home`]
+    /// accordingly.
+    pub fn expand(&self) -> Path {
         if self.to_string().starts_with("~") {
-            Ok(Path::raw(expand_home_regex(&self.to_string(), &crate::TILDE.to_string())))
+            Path::raw(expand_home_regex(&self.to_string(), &crate::TILDE.to_string()))
         } else {
-            Ok(self.clone())
+            self.clone()
         }
-    }
-
-    pub fn try_expand(&self) -> Path {
-        self.expand()
-            .unwrap_or_else(|_| Path::raw(expand_home_regex(&self.to_string(), &crate::TILDE)))
     }
 
     pub fn absolute(&self) -> Result<Path, Error> {
@@ -775,7 +773,7 @@ impl Path {
     /// `canonicalize` returns a canonical path, resolving symlinks.
     pub fn canonicalize(&self) -> Result<Path, Error> {
         let name = self.name();
-        match self.expand()?.path().canonicalize() {
+        match self.expand().path().canonicalize() {
             Ok(path) => Ok(Path::from(path)),
             Err(e) =>
                 if let Some(ancestor) = self.parent() {
@@ -787,11 +785,12 @@ impl Path {
     }
 
     /// `try_canonicalize` returns a canonical path, resolving
-    /// symlinks, returns the caller path in case of error.
+    /// symlinks, returns the result of [`Path::expand`] if an
+    /// error occurs.
     pub fn try_canonicalize(&self) -> Path {
         match self.canonicalize() {
             Ok(path) => path,
-            Err(_) => self.clone(),
+            Err(_) => self.expand(),
         }
     }
 
