@@ -1,6 +1,6 @@
 [package]
 name = "iocore-test"
-version = "2.0.3"
+version = "2.3.0"
 edition = "2024"
 autoexamples = false
 autobenches = false
@@ -21,4 +21,4 @@ doctest = false
 bench = false
 
 [dependencies]
-iocore = { version = "2.0.3" }
+iocore = { version = "2.3.0" }
