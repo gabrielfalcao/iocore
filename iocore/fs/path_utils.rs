@@ -9,7 +9,7 @@ pub fn remove_trailing_slash(haystack: &str) -> String {
     regex.replace_all(haystack, "").to_string()
 }
 pub fn expand_home_regex(haystack: &str, expansion: &str) -> String {
-    let regex = Regex::new(r"^~").unwrap();
+    let regex = Regex::new(format!("^~({}|$)", MAIN_SEPARATOR_STR).as_str()).unwrap();
     regex.replace_all(haystack, expansion).to_string()
 }
 pub fn add_trailing_separator(path: impl std::fmt::Display) -> String {

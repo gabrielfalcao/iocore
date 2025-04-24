@@ -56,7 +56,8 @@ fn test_remove_duplicate_separators() {
 }
 #[test]
 fn test_expand_home_regex() {
-    assert_eq!(expand_home_regex("~baz", "/foo/"), "/foo/baz");
+    assert_eq!(expand_home_regex("~baz", "/foo/"), "~baz");
+    assert_eq!(expand_home_regex("~/baz", "/foo/"), "/foo/baz");
 }
 #[test]
 fn test_split_str_into_relative_subpath_parts() {
