@@ -38,13 +38,13 @@ readme = "README.md"
 repository = "https://github.com/gabrielfalcao/iocore"
 homepage = "https://github.com/gabrielfalcao/iocore"
 license = "MIT OR Apache-2.0"
-keywords = ["std::io", "io", "input/output", "filesystem", "file-system", "std::path", "path", "unix", "glob"]
+keywords = ["io", "path", "unix", "filesystem", "system"]
 authors = ["Gabriel DeMoura <gabrielteratos@gmail.com>"]
 categories = ["filesystem"]
 
 
 [workspace.dependencies]
-iocore = { path = "crates/iocore", default-features = false }
+iocore = { version = "2.3.1", path = "crates/iocore", default-features = false }
 iocore-test = { path = "crates/iocore-test", default-features = false }
 
 [workspace.lints.rust]

@@ -1,7 +1,3 @@
-#![doc(
-    html_logo_url = "https://raw.githubusercontent.com/gabrielfalcao/iocore/main/assets/iocore.png"
-)]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 //!
 //!
 //!
