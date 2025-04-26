@@ -1,0 +1,25 @@
+[package]
+name = "iocore-test"
+description.workspace = true
+documentation.workspace = true
+readme = "README.md"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage = "https://github.com/gabrielfalcao/iocore/tree/main/crates/iocore"
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+
+[package.metadata]
+cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps", "-Zcustom_mir"]
+
+[lib]
+name = "iocore_test"
+path = "iocore-test/lib.rs"
+doctest = false
+bench = false
+
+[dependencies]
+iocore = { workspace = true }

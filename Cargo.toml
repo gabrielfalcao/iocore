@@ -1,36 +1,51 @@
-[package]
-name = "iocore"
-version = "2.3.1"
+[workspace]
+resolver = "2"
+members = [
+    "crates/iocore",
+    "crates/iocore-test",
+]
+
+[workspace.package]
+version = "2.3.2"
 edition = "2021"
-description = "I/O Core Utilities"
+
+description = """IOCore is a safe library for unix CLI tools and Systems programming.
+
+IOCore provides the [`iocore::Path`] abstraction of file-system paths
+designed to replace most [`std::path`] and [`std::fs`] operations with
+practical methods, other abstractions include:
+
+- handling file-system permissions via [`iocore::PathPermissions`]
+  powered by the crate [`trilobyte`].
+
+- handling file-system timestamps via [`iocore::PathTimestamps`]
+  granularly via [`iocore::PathDateTime`].
+
+IOCore provides the [`iocore::walk_dir`] function and its companion
+trait [`iocore::WalkProgressHandler`] which traverses file-systems
+quickly via threads.
+
+IOcore provides [`iocore::User`] which provides unix user information
+such as uid, path to home etc.
+
+The module [`iocore::env`] provides [`iocore::env:args`] returns a
+[`Vec<String>`] from [`std::env:args`], and [`iocore::env:var`] that
+returns environment variables as string.
+"""
+
 documentation = "https://docs.rs/iocore"
 readme = "README.md"
+repository = "https://github.com/gabrielfalcao/iocore"
 homepage = "https://github.com/gabrielfalcao/iocore"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+keywords = ["std::io", "io", "input/output", "filesystem", "file-system", "std::path", "path", "unix", "glob"]
+authors = ["Gabriel DeMoura <gabrielteratos@gmail.com>"]
+categories = ["filesystem"]
 
-[package.metadata]
-cargo-args = ["-Zmtime-on-use", "-Zavoid-dev-deps", "-Zcustom_mir"]
 
-[features]
-default = []
+[workspace.dependencies]
+iocore = { path = "crates/iocore", default-features = false }
+iocore-test = { path = "crates/iocore-test", default-features = false }
 
-[dependencies]
-chrono = { version = "0.4.31", features = ["serde"] }
-glob = "0.3.1"
-lazy_static = "1.4.0"
-sanitation = { version = "1.0.3" }
-serde = { version = "1.0.219", features = ["derive"] }
-regex = { version = "1.10.3", features = ["use_std"] }
-thread-groups = { version = "0.1.2" }
-filetime = "0.2.25"
-trilobyte = { version = "0.1.2" }
-shlex = "1.3.0"
-
-[dev-dependencies]
-clap = { version = "4.5.20", features = ["derive"] }
-iocore-test = { path = "./iocore-test" }
-serde_json = { version = "1.0.140" }
-
-[lib]
-name = "iocore"
-path = "iocore/lib.rs"
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(nightly)'] }
