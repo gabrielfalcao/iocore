@@ -4,7 +4,8 @@ use std::path::MAIN_SEPARATOR_STR;
 
 use iocore::{Error, Path, PathDateTime, PathPermissions, PathStatus, PathType, Result};
 use iocore_test::{
-    folder_path, path_to_test_directory, path_to_test_file, path_to_test_folder, seq_bytes, current_source_file
+    current_source_file, folder_path, path_to_test_directory, path_to_test_file,
+    path_to_test_folder, seq_bytes,
 };
 use trilobyte::TriloByte;
 
@@ -52,8 +53,10 @@ fn test_relative_to_cwd() -> Result<()> {
     let curr_cwd = Path::cwd().to_string();
     let current_source_file_ = current_source_file!();
     let module_path_ = module_path!().to_string();
-    dbg!(&module_path_, &curr_file, &curr_cwd, &current_source_file_);
-    assert_eq!(Path::raw(current_source_file!()).relative_to_cwd(), Path::raw("tests/test_path.rs"));
+    assert_eq!(
+        Path::raw(current_source_file!()).relative_to_cwd(),
+        Path::raw("tests/test_path.rs")
+    );
     Ok(())
 }
 
@@ -184,6 +187,10 @@ fn test_path_append() -> Result<()> {
     append.write(b"resolved")?;
     path.append(b"\nend")?;
     assert_eq!(path.read()?, "resolved\nend");
+
+    let path = Path::tmp_file();
+    path.append(b"data")?;
+    assert_eq!(path.read()?, "data");
     Ok(())
 }
 
@@ -426,23 +433,9 @@ fn test_file() -> Result<()> {
 }
 
 #[test]
-fn test_writable_file() -> Result<()> {
-    let test_file = path_to_test_file!("a/b/c").write_unchecked(&[]);
-    assert_eq!(Path::writable_file(test_file.to_string()), Ok(test_file));
-    Ok(())
-}
-
-#[test]
 fn test_directory() -> Result<()> {
     let test_directory = path_to_test_directory!("a/b/c").mkdir()?;
     assert_eq!(Path::directory(test_directory.to_string()), Ok(test_directory));
-    Ok(())
-}
-
-#[test]
-fn test_writable_directory() -> Result<()> {
-    let test_directory = path_to_test_directory!("a/b/c").mkdir()?;
-    assert_eq!(Path::writable_directory(test_directory.to_string()), Ok(test_directory));
     Ok(())
 }
 
@@ -470,7 +463,6 @@ fn test_path_canonicalize() -> Result<()> {
     );
     Ok(())
 }
-
 
 #[test]
 fn test_path_permissions() -> Result<()> {
@@ -525,5 +517,24 @@ fn test_path_set_permissions() -> Result<()> {
 
     file.set_permissions(&PathPermissions::from_u32(0o777)?)?;
     assert_eq!(format!("{:o}", file.mode()), "777");
+    Ok(())
+}
+
+#[test]
+fn test_writable_symlink() -> Result<()> {
+    Ok(())
+}
+
+#[test]
+fn test_path_rename() -> Result<()> {
+    let to_folder = path_to_test_folder!("to");
+    let from_file = Path::tmp_file().write(b"data")?;
+    let to = to_folder.join("tmp");
+    assert_eq!(to.is_file(), false);
+    from_file.rename(&to, true)?;
+    assert_eq!(to.is_file(), true);
+    to_folder.delete()?;
+    assert_eq!(to_folder.exists(), false);
+
     Ok(())
 }

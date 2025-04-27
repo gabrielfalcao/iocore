@@ -1,11 +1,11 @@
-use crate::{FileSystemError, FileSystemException, Path, PathType, WalkDirDepth};
+use crate::{Path, PathType, WalkDirDepth};
 
 /// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
 pub enum Error {
     /// `Error::IOError` wraps [`std::io::Error`]
     IOError(std::io::ErrorKind),
-    /// `Error::FileSystemException` represents filesystem-related errors
+    /// `Error::FileSystemError` represents filesystem-related errors
     FileSystemError(String),
     MalformedGlobPattern(String),
     HomePathError(String),
@@ -75,54 +75,6 @@ impl std::error::Error for Error {}
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::IOError(e.kind())
-    }
-}
-impl From<FileSystemException> for Error {
-    fn from(e: FileSystemException) -> Self {
-        Error::FileSystemError(format!("{}", e))
-    }
-}
-
-impl From<(FileSystemError, Path, String)> for Error {
-    fn from(t3: (FileSystemError, Path, String)) -> Error {
-        let exc: FileSystemException = t3.into();
-        exc.into()
-    }
-}
-impl From<(FileSystemError, &Path, String)> for Error {
-    fn from(t3: (FileSystemError, &Path, String)) -> Error {
-        let (e, p, s) = t3;
-        let exc: FileSystemException = (e, p.clone(), s).into();
-        exc.into()
-    }
-}
-impl From<(FileSystemError, Path, &str)> for Error {
-    fn from(t3: (FileSystemError, Path, &str)) -> Error {
-        let (e, p, s) = t3;
-        let exc: FileSystemException = (e, p, s.to_string()).into();
-        exc.into()
-    }
-}
-impl From<(FileSystemError, &Path, &str)> for Error {
-    fn from(t3: (FileSystemError, &Path, &str)) -> Error {
-        let (e, p, s) = t3;
-        let exc: FileSystemException = (e, p.clone(), s.to_string()).into();
-        exc.into()
-    }
-}
-
-impl From<(FileSystemError, &Path)> for Error {
-    fn from(t2: (FileSystemError, &Path)) -> Error {
-        let (e, p) = t2;
-        let exc: FileSystemException = (e, p.clone()).into();
-        exc.into()
-    }
-}
-impl From<(FileSystemError, Path)> for Error {
-    fn from(t3: (FileSystemError, Path)) -> Error {
-        let (e, p) = t3;
-        let exc: FileSystemException = (e, p).into();
-        exc.into()
     }
 }
 impl From<thread_groups::Error> for Error {

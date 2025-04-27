@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "crates/iocore",
-    "crates/iocore-test",
+    "crates/test",
 ]
 
 [workspace.package]
@@ -45,7 +45,7 @@ categories = ["filesystem"]
 
 [workspace.dependencies]
 iocore = { version = "2.3.1", path = "crates/iocore", default-features = false }
-iocore-test = { path = "crates/iocore-test", default-features = false }
+iocore-test = { path = "crates/test", default-features = false }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(nightly)'] }

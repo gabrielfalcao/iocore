@@ -27,14 +27,12 @@ extern crate lazy_static;
 pub mod env;
 pub(crate) mod errors;
 pub(crate) mod fs;
-pub(crate) mod io;
 pub(crate) mod sh;
 pub(crate) mod sys;
 pub(crate) mod walk;
 
 pub use env::{args, args_from_string, var};
 pub use errors::{Error, Result};
-pub use fs::errors::{FileSystemError, FileSystemException};
 pub use fs::ls_path_type::LsPathType;
 pub use fs::opts::OpenOptions;
 pub use fs::path_datetime::PathDateTime;
@@ -50,8 +48,6 @@ pub use fs::path_utils::{
 pub use fs::perms::PathPermissions;
 pub use fs::size::{ByteUnit, Size};
 pub use fs::{Path, ROOT_PATH_STR, USERS_PATH};
-pub use io::buffer::FileBuffer;
-pub use io::error::Code;
 pub use sh::{
     shell_command, shell_command_stdout, shell_command_string_output, shell_command_vec_output,
 };

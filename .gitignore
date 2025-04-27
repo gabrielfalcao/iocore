@@ -1,15 +1,6 @@
-##    ##'"""""`## oo   dP   oo
-##    #' .mmm. `#      88
-##    #  ######## dP d8888P dP .d8888b. 88d888b. .d8888b. 88d888b. .d8888b.
-##    #  ###   `# 88   88   88 88'  `88 88'  `88 88'  `88 88'  `88 88ooood8
-## dP #. `###' .# 88   88   88 88.  .88 88    88 88.  .88 88       88.  ...
-## 88 ##.     .## dP   dP   dP `8888P88 dP    dP `88888P' dP       `88888P'
-##    ###########                   .88
-##                              d8888P
 tests/.*
 .*[.]txt
 target
-packages/.*/target
 Cargo.lock
 .*[.]txt
 .*[.]pid
@@ -17,8 +8,8 @@ stubs.*
 [.]env
 *[.]json
 *[.]pdf
-[.]hg.*
 *.test
 tests/*
 !tests/*.rs
 *.profraw
+__test_files__

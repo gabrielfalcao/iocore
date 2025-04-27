@@ -90,7 +90,6 @@ fn test_walk_dir() -> Result<(), Error> {
             "sh.rs",
             "sys.rs",
             "walk.rs",
-            "fs/errors.rs",
             "fs/filename.rs",
             "fs/ls_path_type.rs",
             "fs/opts.rs",
@@ -102,9 +101,6 @@ fn test_walk_dir() -> Result<(), Error> {
             "fs/path_utils.rs",
             "fs/perms.rs",
             "fs/size.rs",
-            "io/buffer.rs",
-            "io/error.rs",
-            "io/mod.rs",
         ]
     );
     Ok(())
@@ -137,7 +133,6 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
             "sh.rs",
             "sys.rs",
             "walk.rs",
-            "fs/errors.rs",
             "fs/filename.rs",
             "fs/ls_path_type.rs",
             "fs/opts.rs",
@@ -149,9 +144,6 @@ fn test_walk_dir_no_aggregating_specific_directory() -> Result<(), Error> {
             "fs/path_utils.rs",
             "fs/perms.rs",
             "fs/size.rs",
-            "io/buffer.rs",
-            "io/error.rs",
-            "io/mod.rs",
         ]
     );
     Ok(())
@@ -187,7 +179,6 @@ fn test_walk_dir_skip_scanning_specific_directories() -> Result<(), Error> {
             "sh.rs",
             "sys.rs",
             "walk.rs",
-            "fs/errors.rs",
             "fs/filename.rs",
             "fs/ls_path_type.rs",
             "fs/opts.rs",
