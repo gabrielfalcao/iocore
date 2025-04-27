@@ -2,9 +2,9 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 
 use regex::Regex;
-use sanitation::{from_hex, SBoolean, SString};
+use sanitation::{SBoolean, SString, from_hex};
 
-use crate::{env_var, Error};
+use crate::{Error, env_var};
 
 pub const DEFAULT_UID: u32 = if cfg!(target_os = "macos") { 501 } else { 1001 };
 

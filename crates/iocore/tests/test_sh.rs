@@ -1,4 +1,7 @@
-use iocore::{shell_command, shell_command_string_output, shell_command_vec_output, shell_command_stdout, Path};
+use iocore::{
+    Path, shell_command, shell_command_stdout, shell_command_string_output,
+    shell_command_vec_output,
+};
 use sanitation::SString;
 
 #[test]
@@ -36,7 +39,6 @@ fn test_shell_command() {
     let exit_code = shell_command("test 'a z' == \"a z\"", ".").unwrap();
     assert_eq!(exit_code, 0);
 }
-
 
 #[test]
 fn test_shell_command_stdout() {

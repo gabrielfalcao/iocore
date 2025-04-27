@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "2.3.2"
+version = "3.0.0"
 edition = "2021"
 
 description = """IOCore is a safe library for unix CLI tools and Systems programming.
@@ -44,7 +44,7 @@ categories = ["filesystem"]
 
 
 [workspace.dependencies]
-iocore = { version = "2.3.1", path = "crates/iocore", default-features = false }
+iocore = { version = "3.0.0", path = "crates/iocore", default-features = false }
 iocore-test = { path = "crates/test", default-features = false }
 
 [workspace.lints.rust]

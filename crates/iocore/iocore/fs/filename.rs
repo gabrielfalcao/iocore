@@ -1,7 +1,7 @@
 use std::path::MAIN_SEPARATOR_STR;
 
-use crate::errors::{Error, Result};
 use crate::Path;
+use crate::errors::{Error, Result};
 
 pub struct FileName {
     value: String,

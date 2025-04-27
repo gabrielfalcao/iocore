@@ -6,10 +6,11 @@ pub(crate) fn partial_cmp_paths_by_parts(a: &Path, b: &Path) -> Option<Ordering>
     Some(cmp_paths_by_parts(a, b))
 }
 pub(crate) fn cmp_paths_by_parts(a: &Path, b: &Path) -> Ordering {
-    let cmp = b
-        .is_dir()
-        .cmp(&a.is_dir())
-        .cmp(&b.to_string().cmp(&a.to_string()).cmp(&a.relative_to_cwd().split().len().cmp(&b.relative_to_cwd().split().len())));
+    let cmp = b.is_dir().cmp(&a.is_dir()).cmp(
+        &b.to_string()
+            .cmp(&a.to_string())
+            .cmp(&a.relative_to_cwd().split().len().cmp(&b.relative_to_cwd().split().len())),
+    );
     let cmp = if cmp == Ordering::Equal { fallback_cmp_paths_by_parts(a, b) } else { cmp };
     cmp
 }

@@ -45,7 +45,7 @@ macro_rules! env_var {
             Err(error) => {
                 eprintln!("[warning] {}", error.to_string());
                 String::new()
-            }
+            },
         }
-    }}
+    }};
 }

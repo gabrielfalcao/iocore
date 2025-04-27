@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use iocore::{walk_dir, Error, Path, WalkProgressHandler};
+use iocore::{Error, Path, WalkProgressHandler, walk_dir};
 
 fn main() -> Result<(), iocore::Error> {
     let opt = Opt::parse();

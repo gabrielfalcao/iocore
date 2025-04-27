@@ -16,7 +16,7 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::path::{PathBuf, MAIN_SEPARATOR_STR};
+use std::path::{MAIN_SEPARATOR_STR, PathBuf};
 use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;

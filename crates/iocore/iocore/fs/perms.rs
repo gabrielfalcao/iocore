@@ -1,4 +1,4 @@
-use trilobyte::{high_water_mark_u8_to_trilobyte, TriloByte};
+use trilobyte::{TriloByte, high_water_mark_u8_to_trilobyte};
 
 /// `PathPermissions`
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Default)]
@@ -210,15 +210,15 @@ mod tests_path_permissions {
 pub struct Permission(TriloByte);
 impl Permission {
     pub fn readable(&self) -> bool {
-        self.0 .0 == true
+        self.0.0 == true
     }
 
     pub fn writable(&self) -> bool {
-        self.0 .1 == true
+        self.0.1 == true
     }
 
     pub fn executable(&self) -> bool {
-        self.0 .2 == true
+        self.0.2 == true
     }
 }
 

@@ -14,10 +14,18 @@ mod test_very_specific_ordering_files {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/aaaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/mmmmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/nnnnn"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/zzzzz"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/aaaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/mmmmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/nnnnn"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/test_paths_should_be_ordered_alphabetically/zzzzz"
+                ),
             ]
         );
     }
@@ -33,10 +41,18 @@ mod test_very_specific_ordering_files {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/aaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/aaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/mmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/mmmmm"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/aaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/aaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/mmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_length/mmmmm"
+                ),
             ]
         );
     }
@@ -54,12 +70,24 @@ mod test_very_specific_ordering_files {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"
+                ),
             ]
         );
     }
@@ -80,10 +108,18 @@ mod test_very_specific_ordering_folders {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/aaaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/mmmmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/nnnnn"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/zzzzz"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/aaaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/mmmmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/nnnnn"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/test_paths_should_be_ordered_alphabetically/zzzzz"
+                ),
             ]
         );
     }
@@ -99,10 +135,18 @@ mod test_very_specific_ordering_folders {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/aaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/aaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/mmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/mmmmm"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/aaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/aaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/mmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_length/mmmmm"
+                ),
             ]
         );
     }
@@ -120,12 +164,24 @@ mod test_very_specific_ordering_folders {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_folders/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"
+                ),
             ]
         );
     }
@@ -149,12 +205,24 @@ mod test_very_specific_ordering_files_and_dictories {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/aaaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/mmmmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/nnnnn"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/zzzzz"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/mmmmm/mmmmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/nnnnn/nnnn"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/aaaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/mmmmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/nnnnn"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/zzzzz"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/mmmmm/mmmmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/test_paths_should_be_ordered_alphabetically/nnnnn/nnnn"
+                ),
             ]
         );
     }
@@ -170,10 +238,18 @@ mod test_very_specific_ordering_files_and_dictories {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/aaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/aaaa"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/mmm"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/mmmmm"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/aaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/aaaa"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/mmm"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_length/mmmmm"
+                ),
             ]
         );
     }
@@ -196,17 +272,39 @@ mod test_very_specific_ordering_files_and_dictories {
         assert_eq!(
             paths,
             vec![
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/a"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"),
-                Path::raw("tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/a"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/abcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/nopqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/a/bcdefg"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/no/pqrst"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/uv/wx/y"
+                ),
+                Path::raw(
+                    "tests/__test_files__/test_path_cmp/test_very_specific_ordering_files_and_dictories/but_paths_should_be_ordered_by_depth_of_folders/u/v/w/x/y"
+                ),
             ]
         );
     }

@@ -1,5 +1,7 @@
 use iocore::{Path, Result};
-use iocore_test::{folder_path, path_to_test_file, seq_bytes, path_to_test_folder, current_source_file};
+use iocore_test::{
+    current_source_file, folder_path, path_to_test_file, path_to_test_folder, seq_bytes,
+};
 
 #[test]
 fn test_path_to_test_file() -> Result<()> {

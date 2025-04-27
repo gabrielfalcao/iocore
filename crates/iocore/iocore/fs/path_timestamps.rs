@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
 use crate::fs::path_datetime::PathDateTime;
-use crate::{path_datetime_from_metadata_field, Path};
+use crate::{Path, path_datetime_from_metadata_field};
 /// `PathTimestamps`
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PathTimestamps {

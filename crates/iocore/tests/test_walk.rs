@@ -1,4 +1,4 @@
-use iocore::{glob, walk_dir, walk_globs, Error, NoopProgressHandler, Path, WalkProgressHandler};
+use iocore::{Error, NoopProgressHandler, Path, WalkProgressHandler, glob, walk_dir, walk_globs};
 use iocore_test::{folder_path, path_to_test_folder};
 
 #[test]
@@ -9,15 +9,7 @@ fn test_walk_globs_lib_folder() -> Result<(), Error> {
             .filter(|path| !path.name().starts_with("."))
             .map(|path| path.name())
             .collect::<Vec<String>>(),
-        vec![
-            "env.rs",
-            "errors.rs",
-            "fs.rs",
-            "lib.rs",
-            "sh.rs",
-            "sys.rs",
-            "walk.rs",
-        ]
+        vec!["env.rs", "errors.rs", "fs.rs", "lib.rs", "sh.rs", "sys.rs", "walk.rs",]
     );
     Ok(())
 }
