@@ -1,5 +1,6 @@
-use trilobyte::{TriloByte, high_water_mark_u8_to_trilobyte};
+use trilobyte::{high_water_mark_u8_to_trilobyte, TriloByte};
 
+use crate::traceback;
 /// `PathPermissions`
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Default)]
 pub struct PathPermissions {
@@ -32,10 +33,7 @@ impl PathPermissions {
 
     pub fn from_string_octal(repr: &str) -> Result<PathPermissions, crate::Error> {
         let val = u32::from_str_radix(repr, 8).map_err(|error| {
-            crate::Error::FileSystemError(format!(
-                "cannot parse u32 from {} base 8: {}",
-                repr, error
-            ))
+            traceback!(FileSystemError, "cannot parse u32 from {} base 8: {}", repr, error)
         })?;
         Ok(PathPermissions::from_u32(val)?)
     }
@@ -132,7 +130,7 @@ impl Into<u32> for PathPermissions {
 mod tests_path_permissions {
     use trilobyte::TriloByte;
 
-    use super::PathPermissions;
+    use crate::{Error, PathPermissions};
 
     #[test]
     fn test_permissions_to_array() {
@@ -172,9 +170,7 @@ mod tests_path_permissions {
         assert_eq!(result.is_err(), true);
         assert_eq!(
             result,
-            Err(crate::Error::FileSystemError(format!(
-                "cannot parse u32 from 909 base 8: invalid digit found in string"
-            )))
+            Err(Error::FileSystemError("cannot parse u32 from 909 base 8: invalid digit found in string [iocore::fs::perms::PathPermissions::from_string_octal::{{closure}}:[crates/iocore/iocore/fs/perms.rs:36]]\n".to_string()))
         );
     }
     #[test]
@@ -210,15 +206,15 @@ mod tests_path_permissions {
 pub struct Permission(TriloByte);
 impl Permission {
     pub fn readable(&self) -> bool {
-        self.0.0 == true
+        self.0 .0 == true
     }
 
     pub fn writable(&self) -> bool {
-        self.0.1 == true
+        self.0 .1 == true
     }
 
     pub fn executable(&self) -> bool {
-        self.0.2 == true
+        self.0 .2 == true
     }
 }
 

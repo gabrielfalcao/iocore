@@ -104,7 +104,7 @@ macro_rules! traceback {
         }
         let name = type_name_of(f);
         let name = name.strip_suffix("::f").unwrap();
-        $crate::Error::$variant(format!("{} [{}:[{}:{}]]", $error, name, file!(), line!()))
+        $crate::Error::$variant(format!("{} [{}:[{}:{}]]\n", $error, name, file!(), line!()))
     }};
     ($variant:ident, $format:literal, $arg:expr  ) => {{
         $crate::traceback!($variant, format!($format, $arg))

@@ -108,7 +108,7 @@ fn test_path_safe() -> Result<()> {
     let long_name = (0..64).map(|_| "noon".to_string()).collect::<String>();
     assert_eq!(
         Path::safe(long_name),
-        Err(Error::FileSystemError("path too long in macos: \"noonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoon\" [iocore::fs::Path::safe:[crates/iocore/iocore/fs.rs:89]]".to_string()))
+        Err(Error::FileSystemError("path too long in macos: \"noonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoon\" [iocore::fs::Path::safe:[crates/iocore/iocore/fs.rs:89]]\n".to_string()))
     );
     let long_path_with_short_names = (0..256)
         .map(|_| "noon".to_string())

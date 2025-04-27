@@ -206,7 +206,7 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
     }
     assert_eq!(
         walk_dir(&path, ErrorOnWalkHandler, None),
-        Err(Error::WalkDirError("PathScanningError: path shall not be scanned [depth:1] [iocore::walk::iocore_walk_dir:[crates/iocore/iocore/walk.rs:69]]".to_string())),
+        Err(Error::WalkDirError("PathScanningError: path shall not be scanned [depth:1] [iocore::walk::iocore_walk_dir:[crates/iocore/iocore/walk.rs:69]]\n".to_string())),
     );
     Ok(())
 }
