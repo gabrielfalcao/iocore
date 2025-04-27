@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::os::unix::fs::OpenOptionsExt;
 
-use crate::Error;
+use crate::{traceback, Error};
 
 #[derive(Debug)]
 pub struct OpenOptions {
@@ -87,13 +87,12 @@ impl OpenOptions {
                 .open(&path)
         }
         .map_err(|e| {
-            Error::FileSystemError(format!(
-                "{}:{} {:#?}: {}",
-                file!(),
-                line!(),
+            traceback!(
+                FileSystemError,
+                "{:#?}: {}",
                 Into::<crate::Path>::into(path).to_string(),
                 e.to_string()
-            ))
+            )
         })?)
     }
 }

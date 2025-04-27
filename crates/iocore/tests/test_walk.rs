@@ -1,4 +1,4 @@
-use iocore::{Error, NoopProgressHandler, Path, WalkProgressHandler, glob, walk_dir, walk_globs};
+use iocore::{glob, walk_dir, walk_globs, Error, NoopProgressHandler, Path, WalkProgressHandler};
 use iocore_test::{folder_path, path_to_test_folder};
 
 #[test]
@@ -206,11 +206,7 @@ fn test_walk_dir_error_handling_() -> Result<(), Error> {
     }
     assert_eq!(
         walk_dir(&path, ErrorOnWalkHandler, None),
-        Err(Error::WalkDirError(
-            format!("PathScanningError: path shall not be scanned"),
-            path.join("fs"),
-            1
-        )),
+        Err(Error::WalkDirError("PathScanningError: path shall not be scanned [depth:1] [iocore::walk::iocore_walk_dir:[crates/iocore/iocore/walk.rs:69]]".to_string())),
     );
     Ok(())
 }

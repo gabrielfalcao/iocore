@@ -8,7 +8,7 @@ use chrono::{DateTime, FixedOffset, Local, NaiveDateTime, Utc};
 use filetime::FileTime;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::Error;
+use crate::{traceback, Error};
 
 #[derive(Clone)]
 pub struct PathDateTime {
@@ -104,10 +104,7 @@ impl PathDateTime {
         Ok(PathDateTime::from_datetime_utc(
             &NaiveDateTime::parse_from_str(s, fmt)
                 .map_err(|error| {
-                    Error::ParseError(format!(
-                        "error parsing '{}' with format '{}': {}",
-                        s, fmt, error
-                    ))
+                    traceback!(ParseError, "error parsing '{}' with format '{}': {}", s, fmt, error)
                 })?
                 .and_utc(),
         ))

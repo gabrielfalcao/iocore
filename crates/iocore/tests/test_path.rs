@@ -214,8 +214,8 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_exists_child_doesnt
 }
 
 #[test]
-fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists(
-) -> Result<()> {
+fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists()
+-> Result<()> {
     let nonexisting_folder_path = folder_path!(
         "test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists/a/b/c"
     )

@@ -319,27 +319,17 @@ impl Path {
     }
 
     pub fn append(&self, contents: &[u8]) -> Result<usize, Error> {
-        let mut file =
-            self.open(OpenOptions::new().read(true).append(true).write(true).create(true))
-                .map_err(|e| {
-                    traceback!(FileSystemError,
-                    "Path::append():[openread(true).append(true).write(true).create(true)]{} {}",
-                    line!(),
-                    e
-                )
-                })?;
+        let mut file = self
+            .open(OpenOptions::new().read(true).append(true).write(true).create(true))
+            .map_err(|e| traceback!(FileSystemError, e))?;
         if self.exists() {
             // seek to the end of file if exists
             file.seek(SeekFrom::End(0))?;
         };
         let bytes = contents.len();
-        file.write_all(contents).map_err(|e| {
-            traceback!(FileSystemError, "Path::append() [file.write_all()]:{} {}", line!(), e)
-        })?;
+        file.write_all(contents).map_err(|e| traceback!(FileSystemError, e))?;
 
-        file.flush().map_err(|e| {
-            traceback!(FileSystemError, "Path::append() [file.flush()]:{} {}", line!(), e)
-        })?;
+        file.flush().map_err(|e| traceback!(FileSystemError, e))?;
         Ok(bytes)
     }
 
@@ -360,14 +350,13 @@ impl Path {
         }
         match std::fs::rename(self.path(), to.path()) {
             Ok(_) => Ok(to),
-            Err(e) =>
+            Err(error) =>
                 return Err(traceback!(
                     FileSystemError,
-                    "Path::rename():{} moving {:#?} to {:#?}: {}",
-                    line!(),
+                    "renaming {:#?} to {:#?}: {}",
                     self.to_string(),
                     to.to_string(),
-                    e.to_string()
+                    error
                 )),
         }
     }
@@ -652,12 +641,7 @@ impl Path {
             if let Some(ancestor) = self.parent() {
                 Ok(ancestor.try_canonicalize().join(name))
             } else {
-                Err(traceback!(
-                    FileSystemError,
-                    "Path::absolute():{} {:#?}: has no ancestors",
-                    line!(),
-                    self.to_string()
-                ))
+                Err(traceback!(FileSystemError, "{:#?} has no ancestors", self.to_string()))
             }
         } else {
             Ok(self.canonicalize()?)
@@ -677,13 +661,7 @@ impl Path {
                 if let Some(ancestor) = self.parent() {
                     Ok(ancestor.try_absolute().join(name))
                 } else {
-                    Err(traceback!(
-                        FileSystemError,
-                        "Path::canonicalize() {:#?}: {}: {}",
-                        self.to_string(),
-                        line!(),
-                        e.to_string()
-                    ))
+                    Err(traceback!(FileSystemError, e.to_string()))
                 },
         }
     }
@@ -707,42 +685,22 @@ impl Path {
 
     pub fn read_symlink(&self) -> Result<Path, Error> {
         if self.kind() != PathType::Symlink {
-            return Err(traceback!(
-                FileSystemError,
-                "Path::read_symlink():{} {:#?}: not a symlink",
-                line!(),
-                self.to_string()
-            ));
+            return Err(traceback!(FileSystemError, "not a symlink: {:#?}", self.to_string()));
         }
         Ok(std::fs::read_link(self)
-            .map_err(|e| {
-                traceback!(
-                    FileSystemError,
-                    "Path::read_symlink():{} {:#?}: {}",
-                    line!(),
-                    self.to_string(),
-                    e
-                )
-            })?
+            .map_err(|e| traceback!(FileSystemError, "{:#?}: {}", self.to_string(), e))?
             .into())
     }
 
     pub fn create_symlink(&self, to: impl Into<Path>) -> Result<Path, Error> {
         let from = self.canonicalize().map_err(|e| {
-            traceback!(
-                FileSystemError,
-                "Path::create_symlink():{} {:#?}: {}",
-                line!(),
-                self.to_string(),
-                e.to_string()
-            )
+            traceback!(FileSystemError, "{:#?}: {}", self.to_string(), e.to_string())
         })?;
         let to = to.into();
         if to.exists() {
             return Err(traceback!(
                 FileSystemError,
-                "Path::create_symlink():{} {:#?}: target {:#?} exists",
-                line!(),
+                "creating symlink from {:#?} to {:#?}: destination exists",
                 self.to_string(),
                 to.to_string()
             ));
@@ -750,10 +708,10 @@ impl Path {
         ::std::os::unix::fs::symlink(from, &to).map_err(|e| {
             traceback!(
                 FileSystemError,
-                "Path::create_symlink():{} {:#?}: {}",
-                line!(),
+                "creating symlink from {:#?} to {:#?}: {}",
                 self.to_string(),
-                e.to_string()
+                to.to_string(),
+                e
             )
         })?;
         Ok(to)
@@ -860,14 +818,8 @@ impl Path {
         }
         let path = self.clone();
         if !path.exists() {
-            std::fs::create_dir_all(&path).map_err(|e| {
-                traceback!(
-                    FileSystemError,
-                    "Path::mkdir():{} {:#?}: {}",
-                    line!(),
-                    self.to_string(),
-                    e.to_string()
-                )
+            std::fs::create_dir_all(&path).map_err(|error| {
+                traceback!(FileSystemError, "creating directory {:#?}: {}", self.to_string(), error)
             })?;
         }
         //path.set_mode(0o0700).map(|_| ()).unwrap_or_default();
@@ -921,12 +873,11 @@ impl Path {
 
     fn path_metadata(&self) -> Result<std::fs::Metadata, Error> {
         Ok(std::fs::metadata(self.path()).map_err(|error| {
-            let io_error = Error::IOError(error.kind()).to_string();
             traceback!(
                 FileSystemError,
                 "error obtaining metadata of of {:#?}: {}",
                 self.to_string(),
-                io_error
+                error.to_string()
             )
         })?)
     }

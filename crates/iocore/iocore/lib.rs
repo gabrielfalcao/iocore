@@ -55,9 +55,7 @@ pub use sys::{
     Group, User, XPC, best_guess_home, get_stdout_string, get_subprocess_output, guess_unix_home,
     parse_u32, safe_string, unix_user_info_home,
 };
-pub use walk::{
-    NoopProgressHandler, Depth, WalkProgressHandler, glob, walk_dir, walk_globs,
-};
+pub use walk::{Depth, NoopProgressHandler, WalkProgressHandler, glob, walk_dir, walk_globs};
 
 lazy_static! {
     pub static ref XPC_INFO: XPC = XPC::from_env();

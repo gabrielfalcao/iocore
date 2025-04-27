@@ -1,10 +1,8 @@
-use crate::{Depth, Path};
-
 /// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
 pub enum Error {
     /// `Error::IOError` wraps [`std::io::Error`]
-    IOError(std::io::ErrorKind),
+    IOError(String),
     /// `Error::FileSystemError` represents filesystem-related errors
     FileSystemError(String),
     MalformedGlobPattern(String),
@@ -20,9 +18,9 @@ pub enum Error {
     PathConversionError(String),
     PathDeserializationError(String),
     UnexpectedPathType(String),
-    WalkDirError(String, Path, Depth),
+    WalkDirError(String),
     PathScanningError(String),
-    PathDoesNotExist(Path),
+    PathDoesNotExist(String),
     MalformedFileName(String),
     ThreadGroupError(String),
     ShellCommandError(String),
@@ -33,29 +31,29 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::IOError(e) => write!(f, "IOError: {}", e),
-            Error::FileSystemError(e) => write!(f, "FileSystemError: {}", e),
-            Error::MalformedGlobPattern(e) => write!(f, "MalformedGlobPattern: {}", e),
-            Error::HomePathError(e) => write!(f, "HomePathError: {}", e),
-            Error::ReadDirError(e) => write!(f, "ReadDirError: {}", e),
-            Error::SafetyError(e) => write!(f, "SafetyError: {}", e),
-            Error::PathDeserializationError(e) => write!(f, "PathDeserializationError: {}", e),
-            Error::IOCoreException(e) => write!(f, "IOCoreException: {}", e),
-            Error::SubprocessError(e) => write!(f, "SubprocessError: {}", e),
-            Error::SystemError(e) => write!(f, "SystemError: {}", e),
-            Error::ChannelError(e) => write!(f, "ChannelError: {}", e),
-            Error::PathConversionError(e) => write!(f, "PathConversionError: {}", e),
+            Error::IOError(error) => write!(f, "IOError: {}", error),
+            Error::FileSystemError(error) => write!(f, "FileSystemError: {}", error),
+            Error::MalformedGlobPattern(error) => write!(f, "MalformedGlobPattern: {}", error),
+            Error::HomePathError(error) => write!(f, "HomePathError: {}", error),
+            Error::ReadDirError(error) => write!(f, "ReadDirError: {}", error),
+            Error::SafetyError(error) => write!(f, "SafetyError: {}", error),
+            Error::PathDeserializationError(error) =>
+                write!(f, "PathDeserializationError: {}", error),
+            Error::IOCoreException(error) => write!(f, "IOCoreException: {}", error),
+            Error::SubprocessError(error) => write!(f, "SubprocessError: {}", error),
+            Error::SystemError(error) => write!(f, "SystemError: {}", error),
+            Error::ChannelError(error) => write!(f, "ChannelError: {}", error),
+            Error::PathConversionError(error) => write!(f, "PathConversionError: {}", error),
             Error::EnvironmentVarError(s) => write!(f, "EnvironmentVarError: {}", s),
-            Error::UnexpectedPathType(e) => write!(f, "UnexpectedPathType: {}", e),
-            Error::WalkDirError(e, path, depth) =>
-                write!(f, "WalkDirError {}(depth={}): {}", path, depth, e),
-            Error::PathScanningError(path) => write!(f, "PathScanningError: {}", path),
-            Error::PathDoesNotExist(path) => write!(f, "PathDoesNotExist: {}", path),
-            Error::MalformedFileName(e) => write!(f, "MalformedFileName: {}", e),
-            Error::ThreadGroupError(e) => write!(f, "ThreadGroupError: {}", e),
-            Error::ShellCommandError(e) => write!(f, "ShellCommandError: {}", e),
-            Error::ParseError(e) => write!(f, "ParseError: {}", e),
-            Error::PatternMismatch(e) => write!(f, "PatternMismatch: {}", e),
+            Error::UnexpectedPathType(error) => write!(f, "UnexpectedPathType: {}", error),
+            Error::WalkDirError(error) => write!(f, "WalkDirError: {}", error),
+            Error::PathScanningError(error) => write!(f, "PathScanningError: {}", error),
+            Error::PathDoesNotExist(error) => write!(f, "PathDoesNotExist: {}", error),
+            Error::MalformedFileName(error) => write!(f, "MalformedFileName: {}", error),
+            Error::ThreadGroupError(error) => write!(f, "ThreadGroupError: {}", error),
+            Error::ShellCommandError(error) => write!(f, "ShellCommandError: {}", error),
+            Error::ParseError(error) => write!(f, "ParseError: {}", error),
+            Error::PatternMismatch(error) => write!(f, "PatternMismatch: {}", error),
         }
     }
 }
@@ -64,7 +62,7 @@ impl std::error::Error for Error {}
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
-        Error::IOError(e.kind())
+        Error::IOError(e.to_string())
     }
 }
 impl From<thread_groups::Error> for Error {

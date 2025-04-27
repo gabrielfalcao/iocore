@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::Error;
 use crate::fs::path_datetime::PathDateTime;
-use crate::{Path, path_datetime_from_metadata_field};
+use crate::{path_datetime_from_metadata_field, traceback, Path};
 /// `PathTimestamps`
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PathTimestamps {
@@ -51,12 +51,13 @@ impl PathTimestamps {
     pub fn set_access_time(&mut self, new_access_time: &PathDateTime) -> Result<(), Error> {
         filetime::set_file_atime(self.path.path(), new_access_time.filetime()).map_err(
             |error| {
-                Error::FileSystemError(format!(
+                traceback!(
+                    FileSystemError,
                     "error setting access time of path {:#?} to {:#?}: {}",
                     self.path.to_string(),
                     new_access_time.to_string(),
                     error
-                ))
+                )
             },
         )?;
         self.accessed = new_access_time.clone();
@@ -66,12 +67,13 @@ impl PathTimestamps {
     pub fn set_modified_time(&mut self, new_modified_time: &PathDateTime) -> Result<(), Error> {
         filetime::set_file_mtime(self.path.path(), new_modified_time.filetime()).map_err(
             |error| {
-                Error::FileSystemError(format!(
+                traceback!(
+                    FileSystemError,
                     "error setting modified time of path {:#?} to {:#?}: {}",
                     self.path.to_string(),
                     new_modified_time.to_string(),
                     error
-                ))
+                )
             },
         )?;
         self.modified = new_modified_time.clone();
@@ -110,13 +112,13 @@ macro_rules! path_datetime_from_metadata_field {
     ($field:ident, $metadata:ident, $path:ident $(,)?) => {
         Into::<$crate::fs::path_datetime::PathDateTime>::into($metadata.$field().map_err(
             |error| {
-                let io_error = Error::IOError(error.kind()).to_string();
-                Error::FileSystemError(format!(
+                traceback!(
+                    FileSystemError,
                     "error obtaining $field time from metadata {:#?} of path {:#?}: {}",
                     $metadata,
                     $path.to_string(),
-                    io_error
-                ))
+                    error.to_string()
+                )
             },
         )?)
     };

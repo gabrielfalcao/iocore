@@ -1,7 +1,7 @@
 use dumbeq::DumbEq;
 use thread_groups::ThreadGroup;
 
-use crate::{Error, Path};
+use crate::{traceback, Error, Path};
 
 pub type MaxDepth = usize;
 pub type Depth = usize;
@@ -16,17 +16,19 @@ fn iocore_walk_dir(
     let max_depth = max_depth.unwrap_or(usize::MAX);
     let depth = depth.unwrap_or(0) + 1;
     if !path.exists() {
-        return Err(Error::WalkDirError(
-            format!("{:#?} does not exist", path.to_string()),
-            path,
-            depth,
+        return Err(traceback!(
+            WalkDirError,
+            "path {:#?} does not exist [depth: {}]",
+            path.to_string(),
+            depth
         ));
     }
     if !path.is_directory() {
-        return Err(Error::WalkDirError(
-            format!("{:#?} is not a directory", path.to_string()),
-            path,
-            depth,
+        return Err(traceback!(
+            WalkDirError,
+            "path {:#?} not a directory [depth: {}]",
+            path.to_string(),
+            depth
         ));
     }
     let mut result = Vec::<Path>::new();
@@ -37,13 +39,16 @@ fn iocore_walk_dir(
         return Ok(result);
     }
     if !path.exists() {
-        if let Some(error) = handler.error(&path, Error::PathDoesNotExist(path.clone())) {
-            return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
+        match handler.error(&path, traceback!(PathDoesNotExist, path.to_string())) {
+            Some(e) => Err(traceback!(WalkDirError, "{} [depth:{}]", e, depth))?,
+            None => {},
         }
     }
     let path = path.absolute()?;
     for path in path.list()? {
-        handler.progress_in(&path, depth);
+        handler
+            .progress_in(&path, depth)
+            .map_err(|e| traceback!(WalkDirError, "{} [depth:{}]", e, depth))?;
         if path.is_directory() {
             let mut handler = handler.clone();
             match handler.should_scan_directory(&path) {
@@ -61,9 +66,7 @@ fn iocore_walk_dir(
                         })?;
                     },
                 Err(error) => match handler.error(&path, error) {
-                    Some(error) => {
-                        return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
-                    },
+                    Some(e) => Err(traceback!(WalkDirError, "{} [depth:{}]", e, depth))?,
                     None => {},
                 },
             }
@@ -76,9 +79,7 @@ fn iocore_walk_dir(
                     }
                 },
             Err(error) => match handler.error(&path, error) {
-                Some(error) => {
-                    return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
-                },
+                Some(e) => Err(traceback!(WalkDirError, "{} [depth:{}]", e, depth))?,
                 None => {},
             },
         }
@@ -91,7 +92,9 @@ fn iocore_walk_dir(
         .flatten()
     {
         for path in paths.iter() {
-            handler.progress_out(path);
+            handler
+                .progress_out(path)
+                .map_err(|e| traceback!(WalkDirError, "{} [depth:{}]", e, depth))?;
             match handler.path_matching(path) {
                 Ok(should_aggregate_result) =>
                     if should_aggregate_result {
@@ -99,10 +102,8 @@ fn iocore_walk_dir(
                             result.push(path.clone());
                         }
                     },
-                Err(error) => match handler.error(path, error) {
-                    Some(error) => {
-                        return Err(Error::WalkDirError(error.to_string(), path.clone(), depth));
-                    },
+                Err(error) => match handler.error(&path, error) {
+                    Some(e) => Err(traceback!(WalkDirError, "{} [depth:{}]", e, depth))?,
                     None => {},
                 },
             }
@@ -237,7 +238,9 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
     /// threads, this callback is called with the current depth of
     /// search. The depth is synonymous to the amount of nested
     /// threads.
-    fn progress_in(&mut self, _path_: &Path, _depth_: Depth)  {}
+    fn progress_in(&mut self, _path_: &Path, _depth_: Depth) -> std::result::Result<(), Error> {
+        Ok(())
+    }
 
     /// `progress_out` is called for each path scanned after all threads finish running.
     ///
@@ -247,7 +250,9 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
     ///
     /// Because it runs *after* all heuristics and threads, this
     /// callback does not have access to the depth of search.
-    fn progress_out(&mut self, _path_: &Path)  {}
+    fn progress_out(&mut self, _path_: &Path) -> std::result::Result<(), Error> {
+        Ok(())
+    }
 }
 
 /// `NoopProgressHandler` is the builtin implementation of
