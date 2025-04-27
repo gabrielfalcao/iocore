@@ -16,7 +16,7 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::path::{MAIN_SEPARATOR_STR, PathBuf};
+use std::path::{PathBuf, MAIN_SEPARATOR_STR};
 use std::process::Stdio;
 use std::str::FromStr;
 use std::string::ToString;
@@ -38,7 +38,7 @@ use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use size::Size;
 
-use crate::{Error, PathStatus, PathTimestamps, PathType};
+use crate::{traceback, Error, PathStatus, PathTimestamps, PathType};
 
 pub const FILENAME_MAX: usize = if cfg!(target_os = "macos") { 255 } else { 1024 };
 pub const USERS_PATH: &'static str = if cfg!(target_os = "macos") { "/Users" } else { "/home" };
@@ -83,13 +83,16 @@ impl Path {
         } else {
             string.to_string()
         };
-        if string.len() > FILENAME_MAX {
-            return Err(Error::FileSystemError(format!(
-                "{}::Path path too long in {:#?}: {:#?}",
-                module_path!(),
-                std::env::consts::OS,
-                string
-            )));
+        if string.len() > FILENAME_MAX {}
+        for h in string.split(MAIN_SEPARATOR_STR) {
+            if h.len() > FILENAME_MAX {
+                return Err(traceback!(
+                    FileSystemError,
+                    "path too long in {}: {:#?}",
+                    std::env::consts::OS,
+                    h
+                ));
+            }
         }
         Ok(Path::raw(string))
     }
@@ -160,7 +163,7 @@ impl Path {
     pub fn existing(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
         match path.kind() {
-            PathType::None => Err(Error::FileSystemError(format!("PathDoesNotExist"))),
+            PathType::None => Err(traceback!(FileSystemError, "PathDoesNotExist")),
             _ => Ok(path.clone()),
         }
     }
@@ -260,7 +263,7 @@ impl Path {
         if path.try_canonicalize().is_file() {
             Ok(path)
         } else {
-            Err(Error::UnexpectedPathType(path.clone(), path.kind()))
+            Err(traceback!(UnexpectedPathType, "{:#?} ({})", path.to_string(), path.kind()))
         }
     }
 
@@ -269,7 +272,7 @@ impl Path {
         if path.is_directory() {
             Ok(path)
         } else {
-            Err(Error::UnexpectedPathType(path.clone(), path.kind()))
+            Err(traceback!(UnexpectedPathType, "{:#?} ({})", path.to_string(), path.kind()))
         }
     }
 
@@ -277,8 +280,7 @@ impl Path {
         if !self.exists() {
             self.mkdir_parents()?;
         }
-        Ok(File::create(&self.path())
-            .map_err(|e| Error::FileSystemError(format!("Path::create():{} {}", line!(), e)))?)
+        Ok(File::create(&self.path()).map_err(|e| traceback!(FileSystemError, e))?)
     }
 
     /// `write` writes bytes to file under path, truncates existing
@@ -297,45 +299,46 @@ impl Path {
         self.mkdir_parents()?;
         let mut file = self
             .open(OpenOptions::new().write(true).create(true))
-            .map_err(|e| Error::FileSystemError(format!("Path::write():{} {}", line!(), e)))?;
+            .map_err(|e| traceback!(FileSystemError, e))?;
         file.set_len(0)?;
         file.write_all(contents).map_err(|error| {
-            Error::FileSystemError(format!("writing bytes to {:#?}: {}", self.to_string(), error))
+            traceback!(FileSystemError, "writing bytes to {:#?}: {}", self.to_string(), error)
         })?;
         file.flush().map_err(|error| {
-            Error::FileSystemError(format!("flushing bytes to {:#?}: {}", self.to_string(), error))
+            traceback!(FileSystemError, "flushing bytes to {:#?}: {}", self.to_string(), error)
         })?;
         file.sync_all().map_err(|error| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "syncing all OS-internal file content to {:#?}: {}",
                 self.to_string(),
                 error
-            ))
+            )
         })?;
         Ok(self.clone())
     }
 
     pub fn append(&self, contents: &[u8]) -> Result<usize, Error> {
-        let mut file = self
-            .open(OpenOptions::new().read(true).append(true).write(true).create(true))
-            .map_err(|e| {
-                Error::FileSystemError(format!(
+        let mut file =
+            self.open(OpenOptions::new().read(true).append(true).write(true).create(true))
+                .map_err(|e| {
+                    traceback!(FileSystemError,
                     "Path::append():[openread(true).append(true).write(true).create(true)]{} {}",
                     line!(),
                     e
-                ))
-            })?;
+                )
+                })?;
         if self.exists() {
             // seek to the end of file if exists
             file.seek(SeekFrom::End(0))?;
         };
         let bytes = contents.len();
         file.write_all(contents).map_err(|e| {
-            Error::FileSystemError(format!("Path::append() [file.write_all()]:{} {}", line!(), e))
+            traceback!(FileSystemError, "Path::append() [file.write_all()]:{} {}", line!(), e)
         })?;
 
         file.flush().map_err(|e| {
-            Error::FileSystemError(format!("Path::append() [file.flush()]:{} {}", line!(), e))
+            traceback!(FileSystemError, "Path::append() [file.flush()]:{} {}", line!(), e)
         })?;
         Ok(bytes)
     }
@@ -358,13 +361,14 @@ impl Path {
         match std::fs::rename(self.path(), to.path()) {
             Ok(_) => Ok(to),
             Err(e) =>
-                return Err(Error::FileSystemError(format!(
+                return Err(traceback!(
+                    FileSystemError,
                     "Path::rename():{} moving {:#?} to {:#?}: {}",
                     line!(),
                     self.to_string(),
                     to.to_string(),
                     e.to_string()
-                ))),
+                )),
         }
     }
 
@@ -377,11 +381,11 @@ impl Path {
                 };
             }
             std::fs::remove_dir(self.path()).map_err(|e| {
-                Error::FileSystemError(format!("DeleteDirectory {:#?}: {}", self.to_string(), e))
+                traceback!(FileSystemError, "DeleteDirectory {:#?}: {}", self.to_string(), e)
             })?;
         } else if self.exists() {
             std::fs::remove_file(self.path()).map_err(|e| {
-                Error::FileSystemError(format!("DeleteFile {:#?}: {}", self.to_string(), e))
+                traceback!(FileSystemError, "DeleteFile {:#?}: {}", self.to_string(), e)
             })?;
         }
         Ok(self.clone())
@@ -402,30 +406,26 @@ impl Path {
     pub fn read_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut file = self.open(OpenOptions::new().read(true))?;
         let mut bytes = Vec::<u8>::new();
-        file.read_to_end(&mut bytes).map_err(|e| {
-            Error::FileSystemError(format!("ReadFile {:#?}: {}", self.to_string(), e))
-        })?;
+        file.read_to_end(&mut bytes)
+            .map_err(|e| traceback!(FileSystemError, "ReadFile {:#?}: {}", self.to_string(), e))?;
         Ok(bytes)
     }
 
     pub fn read(&self) -> Result<String, Error> {
         let bytes = self.read_bytes()?;
         SString::new(&bytes).safe().map_err(|e| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "UnsafeFileContent {:#?}: {}",
                 self.to_string(),
                 e.to_string()
-            ))
+            )
         })
     }
 
     pub fn size(&self) -> Result<Size, Error> {
         let metadata = self.path_metadata().map_err(|error| {
-            Error::FileSystemError(format!(
-                "error checking size of {:#?}: {}",
-                self.to_string(),
-                error
-            ))
+            traceback!(FileSystemError, "error checking size of {:#?}: {}", self.to_string(), error)
         })?;
         Ok(Size::from(metadata.len()))
     }
@@ -457,11 +457,12 @@ impl Path {
 
     pub fn check_permissions(&self) -> Result<PathPermissions, Error> {
         let metadata = self.path_metadata().map_err(|error| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "error checking permissions of {:#?}: {}",
                 self.to_string(),
                 error
-            ))
+            )
         })?;
         Ok(PathPermissions::from_u32(metadata.mode())?)
     }
@@ -492,32 +493,30 @@ impl Path {
 
     pub fn set_permissions(&mut self, permissions: &PathPermissions) -> Result<Path, Error> {
         let info = std::fs::metadata(self.path()).map_err(|error| {
-            Error::FileSystemError(format!(
-                "obtaining metadata of {:#?}: {}",
-                self.to_string(),
-                error
-            ))
+            traceback!(FileSystemError, "obtaining metadata of {:#?}: {}", self.to_string(), error)
         })?;
         let mut info_permissions = info.permissions();
         info_permissions.set_mode((*permissions).into());
         std::fs::set_permissions(self.path(), info_permissions).map_err(|error| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "setting permissions {} of {:#?}: {}",
                 permissions,
                 self.to_string(),
                 error
-            ))
+            )
         })?;
         Ok(self.clone())
     }
 
     pub fn timestamps(&self) -> Result<PathTimestamps, Error> {
         let metadata = self.path_metadata().map_err(|error| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "error getting timestamps of {:#?}: {}",
                 self.to_string(),
                 error
-            ))
+            )
         })?;
         Ok(PathTimestamps::from_path(self, &metadata)?)
     }
@@ -653,11 +652,12 @@ impl Path {
             if let Some(ancestor) = self.parent() {
                 Ok(ancestor.try_canonicalize().join(name))
             } else {
-                Err(Error::FileSystemError(format!(
+                Err(traceback!(
+                    FileSystemError,
                     "Path::absolute():{} {:#?}: has no ancestors",
                     line!(),
-                    self.to_string(),
-                )))
+                    self.to_string()
+                ))
             }
         } else {
             Ok(self.canonicalize()?)
@@ -677,12 +677,13 @@ impl Path {
                 if let Some(ancestor) = self.parent() {
                     Ok(ancestor.try_absolute().join(name))
                 } else {
-                    Err(Error::FileSystemError(format!(
+                    Err(traceback!(
+                        FileSystemError,
                         "Path::canonicalize() {:#?}: {}: {}",
                         self.to_string(),
                         line!(),
                         e.to_string()
-                    )))
+                    ))
                 },
         }
     }
@@ -706,49 +707,54 @@ impl Path {
 
     pub fn read_symlink(&self) -> Result<Path, Error> {
         if self.kind() != PathType::Symlink {
-            return Err(Error::FileSystemError(format!(
+            return Err(traceback!(
+                FileSystemError,
                 "Path::read_symlink():{} {:#?}: not a symlink",
                 line!(),
-                self.to_string(),
-            )));
+                self.to_string()
+            ));
         }
         Ok(std::fs::read_link(self)
             .map_err(|e| {
-                Error::FileSystemError(format!(
+                traceback!(
+                    FileSystemError,
                     "Path::read_symlink():{} {:#?}: {}",
                     line!(),
                     self.to_string(),
                     e
-                ))
+                )
             })?
             .into())
     }
 
     pub fn create_symlink(&self, to: impl Into<Path>) -> Result<Path, Error> {
         let from = self.canonicalize().map_err(|e| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "Path::create_symlink():{} {:#?}: {}",
                 line!(),
                 self.to_string(),
                 e.to_string()
-            ))
+            )
         })?;
         let to = to.into();
         if to.exists() {
-            return Err(Error::FileSystemError(format!(
+            return Err(traceback!(
+                FileSystemError,
                 "Path::create_symlink():{} {:#?}: target {:#?} exists",
                 line!(),
                 self.to_string(),
-                to.to_string(),
-            )));
+                to.to_string()
+            ));
         }
         ::std::os::unix::fs::symlink(from, &to).map_err(|e| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "Path::create_symlink():{} {:#?}: {}",
                 line!(),
                 self.to_string(),
                 e.to_string()
-            ))
+            )
         })?;
         Ok(to)
     }
@@ -855,12 +861,13 @@ impl Path {
         let path = self.clone();
         if !path.exists() {
             std::fs::create_dir_all(&path).map_err(|e| {
-                Error::FileSystemError(format!(
+                traceback!(
+                    FileSystemError,
                     "Path::mkdir():{} {:#?}: {}",
                     line!(),
                     self.to_string(),
                     e.to_string()
-                ))
+                )
             })?;
         }
         //path.set_mode(0o0700).map(|_| ()).unwrap_or_default();
@@ -915,11 +922,12 @@ impl Path {
     fn path_metadata(&self) -> Result<std::fs::Metadata, Error> {
         Ok(std::fs::metadata(self.path()).map_err(|error| {
             let io_error = Error::IOError(error.kind()).to_string();
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "error obtaining metadata of of {:#?}: {}",
                 self.to_string(),
                 io_error
-            ))
+            )
         })?)
     }
 
@@ -974,11 +982,12 @@ impl Path {
 
     pub fn meta(&self) -> Result<std::fs::Metadata, Error> {
         let metadata = self.path_metadata().map_err(|error| {
-            Error::FileSystemError(format!(
+            traceback!(
+                FileSystemError,
                 "obtaining std::fs::Metadata of {:#?}: {}",
                 self.to_string(),
                 error
-            ))
+            )
         })?;
         Ok(metadata)
     }

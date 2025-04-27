@@ -1,3 +1,4 @@
+use dumbeq::DumbEq;
 use thread_groups::ThreadGroup;
 
 use crate::{Error, Path};
@@ -42,6 +43,7 @@ fn iocore_walk_dir(
     }
     let path = path.absolute()?;
     for path in path.list()? {
+        handler.progress_in(&path, depth);
         if path.is_directory() {
             let mut handler = handler.clone();
             match handler.should_scan_directory(&path) {
@@ -89,6 +91,7 @@ fn iocore_walk_dir(
         .flatten()
     {
         for path in paths.iter() {
+            handler.progress_out(path);
             match handler.path_matching(path) {
                 Ok(should_aggregate_result) =>
                     if should_aggregate_result {
@@ -222,15 +225,37 @@ pub trait WalkProgressHandler: Send + Sync + 'static + Clone {
     fn error(&mut self, _path_: &Path, error: Error) -> Option<Error> {
         Some(error)
     }
+    /// `progress_in` is called after scanning each path and before
+    /// heuristics from which to spawn more threads.
+    ///
+    /// This callback is suitable for tracking general progress *before*
+    /// any heuristics because, unlike [`path_matching`],
+    /// [`should_scan_directory`] and [`error`], it has no side-effect
+    /// affecting heuristics.
+    ///
+    /// Because it runs *before* any heuristics and new possible
+    /// threads, this callback is called with the current depth of
+    /// search. The depth is synonymous to the amount of nested
+    /// threads.
+    fn progress_in(&mut self, _path_: &Path, _depth_: Depth)  {}
+
+    /// `progress_out` is called for each path scanned after all threads finish running.
+    ///
+    /// This callback is suitable for tracking general progress, not
+    /// unlike [`progress_in`], but unlike [`progress_in`] it is
+    /// executed *after* all heuristics.
+    ///
+    /// Because it runs *after* all heuristics and threads, this
+    /// callback does not have access to the depth of search.
+    fn progress_out(&mut self, _path_: &Path)  {}
 }
 
 /// `NoopProgressHandler` is the builtin implementation of
 /// [`WalkProgressHandler`] which aggregates results insofar
 /// as the `path` given to `path_matching` exists at the moment the
 /// calling thread calls it.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, DumbEq)]
 pub struct NoopProgressHandler;
-pub type WalkDirDepth = usize;
 impl WalkProgressHandler for NoopProgressHandler {
     fn path_matching(&mut self, path: &Path) -> std::result::Result<bool, Error> {
         Ok(path.exists())

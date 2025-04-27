@@ -1,4 +1,4 @@
-use crate::{Path, PathType, WalkDirDepth};
+use crate::{Depth, Path};
 
 /// `Error` represents various possible errors returned within the `iocore` crate
 #[derive(Debug, Clone)]
@@ -19,10 +19,8 @@ pub enum Error {
     ChannelError(String),
     PathConversionError(String),
     PathDeserializationError(String),
-    WalkDirInterrupt(String, Path, WalkDirDepth),
-    UnexpectedPathType(Path, PathType),
-    WalkDirError(String, Path, WalkDirDepth),
-    WalkDirInterrupted(String, Path, WalkDirDepth),
+    UnexpectedPathType(String),
+    WalkDirError(String, Path, Depth),
     PathScanningError(String),
     PathDoesNotExist(Path),
     MalformedFileName(String),
@@ -48,15 +46,7 @@ impl std::fmt::Display for Error {
             Error::ChannelError(e) => write!(f, "ChannelError: {}", e),
             Error::PathConversionError(e) => write!(f, "PathConversionError: {}", e),
             Error::EnvironmentVarError(s) => write!(f, "EnvironmentVarError: {}", s),
-            Error::WalkDirInterrupt(e, path, depth) => {
-                write!(f, "WalkDirInterrupt {} ({} depth): {}", path, depth, e)
-            },
-            Error::UnexpectedPathType(path, ptype) => {
-                write!(f, "UnexpectedPathType: {} is not a {}", path, ptype)
-            },
-            Error::WalkDirInterrupted(e, path, depth) => {
-                write!(f, "WalkDirInterrupt {} (depth: {:#?}): {}", path, depth, e)
-            },
+            Error::UnexpectedPathType(e) => write!(f, "UnexpectedPathType: {}", e),
             Error::WalkDirError(e, path, depth) =>
                 write!(f, "WalkDirError {}(depth={}): {}", path, depth, e),
             Error::PathScanningError(path) => write!(f, "PathScanningError: {}", path),
@@ -106,3 +96,22 @@ impl PartialEq for Error {
     }
 }
 impl Eq for Error {}
+
+#[macro_export]
+macro_rules! traceback {
+    ($variant:ident, $error:expr ) => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        let name = name.strip_suffix("::f").unwrap();
+        $crate::Error::$variant(format!("{} [{}:[{}:{}]]", $error, name, file!(), line!()))
+    }};
+    ($variant:ident, $format:literal, $arg:expr  ) => {{
+        $crate::traceback!($variant, format!($format, $arg))
+    }};
+    ($variant:ident, $format:literal, $( $arg:expr ),* ) => {{
+        $crate::traceback!($variant, format!($format, $($arg,)*))
+    }};
+}

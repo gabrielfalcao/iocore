@@ -49,10 +49,6 @@ fn test_relative_to_cwd() -> Result<()> {
         Path::cwd().join("iocore/fs/exceptions.rs").relative_to_cwd(),
         Path::raw("iocore/fs/exceptions.rs")
     );
-    let curr_file = file!().to_string();
-    let curr_cwd = Path::cwd().to_string();
-    let current_source_file_ = current_source_file!();
-    let module_path_ = module_path!().to_string();
     assert_eq!(
         Path::raw(current_source_file!()).relative_to_cwd(),
         Path::raw("tests/test_path.rs")
@@ -109,15 +105,18 @@ fn test_path_contains() -> Result<()> {
 #[cfg(target_os = "macos")]
 #[test]
 fn test_path_safe() -> Result<()> {
-    let path_string = (0..63)
-        .map(|_| format!("path"))
+    let long_name = (0..64).map(|_| "noon".to_string()).collect::<String>();
+    assert_eq!(
+        Path::safe(long_name),
+        Err(Error::FileSystemError("path too long in macos: \"noonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoonnoon\" [iocore::fs::Path::safe:[crates/iocore/iocore/fs.rs:89]]".to_string()))
+    );
+    let long_path_with_short_names = (0..256)
+        .map(|_| "noon".to_string())
         .collect::<Vec<String>>()
         .join(MAIN_SEPARATOR_STR);
     assert_eq!(
-        Path::safe(path_string),
-        Err(Error::FileSystemError(String::from(
-            "iocore::fs::Path path too long in \"macos\": \"path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path/path\""
-        )))
+        Path::safe(&long_path_with_short_names),
+        Ok(Path::raw(&long_path_with_short_names))
     );
     Ok(())
 }
@@ -215,8 +214,8 @@ fn test_relative_to_parent_to_child_no_trailing_slash_parent_exists_child_doesnt
 }
 
 #[test]
-fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists()
--> Result<()> {
+fn test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists(
+) -> Result<()> {
     let nonexisting_folder_path = folder_path!(
         "test_relative_to_parent_to_child_no_trailing_slash_parent_doesnt_exist_child_exists/a/b/c"
     )
@@ -395,21 +394,13 @@ fn test_path_file() -> Result<()> {
 #[test]
 fn test_path_directory() -> Result<()> {
     let existing_directory_path_string = path_to_test_folder!("folder").to_string();
-    let absolute_path_to_existing_directory_path =
-        Path::raw(&existing_directory_path_string).canonicalize()?;
 
     assert_eq!(
         Path::directory(&existing_directory_path_string),
         Ok(Path::new(&existing_directory_path_string))
     );
     Path::directory(&existing_directory_path_string)?.delete()?;
-    assert_eq!(
-        Path::directory(&Path::raw(existing_directory_path_string)),
-        Err(Error::UnexpectedPathType(
-            absolute_path_to_existing_directory_path,
-            PathType::None
-        ))
-    );
+    assert_eq!(Path::directory(&Path::raw(existing_directory_path_string)).is_err(), true);
 
     Ok(())
 }
