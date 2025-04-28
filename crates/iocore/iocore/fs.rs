@@ -1370,6 +1370,12 @@ impl<'de> Visitor<'de> for PathVisitor {
     }
 }
 
+/// [`Default`] implementation of [`Path`] is the current working directory
+impl Default for Path {
+    fn default() -> Path {
+        Path::cwd()
+    }
+}
 #[cfg(test)]
 mod tests {
     use iocore_test::current_source_file;

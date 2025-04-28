@@ -50,6 +50,18 @@ fn test_relative_to_cwd() -> Result<()> {
         Path::raw("iocore/fs/exceptions.rs")
     );
     assert_eq!(
+        Path::cwd().join("crates/io/iocore/fs/exceptions.rs").relative_to_cwd(),
+        Path::raw("crates/io/iocore/fs/exceptions.rs")
+    );
+    assert_eq!(
+        Path::cwd().join("crates/io/iocore/fs/exceptions.rs").relative_to(&Path::cwd()),
+        Path::raw("crates/io/iocore/fs/exceptions.rs")
+    );
+    assert_eq!(
+        Path::cwd().relative_to(&Path::cwd().join("crates/io/iocore/fs/exceptions.rs")),
+        Path::raw("../../../../../")
+    );
+    assert_eq!(
         Path::raw(current_source_file!()).relative_to_cwd(),
         Path::raw("tests/test_path.rs")
     );
@@ -536,5 +548,12 @@ fn test_path_rename() -> Result<()> {
     to_folder.delete()?;
     assert_eq!(to_folder.exists(), false);
 
+    Ok(())
+}
+
+
+#[test]
+fn test_path_default() -> Result<()> {
+    assert_eq!(Path::default(), Path::cwd());
     Ok(())
 }
