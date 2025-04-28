@@ -44,7 +44,7 @@ categories = ["filesystem"]
 
 
 [workspace.dependencies]
-iocore = { path = "crates/iocore", default-features = false }
+iocore = { version = "3.0.1", path = "crates/iocore", default-features = false }
 iocore-test = { path = "crates/test", default-features = false }
 
 [workspace.lints.rust]
