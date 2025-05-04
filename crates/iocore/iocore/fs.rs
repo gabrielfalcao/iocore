@@ -107,7 +107,7 @@ impl Path {
     /// }
     /// ```
     pub fn canonical(path: impl std::fmt::Display) -> Path {
-        Path::new(path).try_canonicalize()
+        Path::raw(path).try_canonicalize()
     }
 
     /// `raw` instantiates a [`Path`] with the given string making no validations nor extensions, unlike [`new`] and [`safe`]
@@ -130,7 +130,7 @@ impl Path {
 
     /// `cwd` returns a [`Path`] from the working directory of the current unix process.
     pub fn cwd() -> Path {
-        Path::new(
+        Path::raw(
             ::std::env::current_dir()
                 .map(|p| p.display().to_string())
                 .unwrap_or_else(|_| ".".to_string()),
@@ -162,9 +162,10 @@ impl Path {
     /// `existing` returns a [`Path`] only if the given string points to a valid existing location in the filesystem
     pub fn existing(path: impl std::fmt::Display) -> Result<Path, Error> {
         let path = Path::new(path);
-        match path.kind() {
-            PathType::None => Err(traceback!(FileSystemError, "PathDoesNotExist")),
-            _ => Ok(path.clone()),
+        if !path.try_canonicalize().exists() {
+            Err(traceback!(FileSystemError, "PathDoesNotExist"))
+        } else {
+            Ok(path)
         }
     }
 
@@ -221,22 +222,20 @@ impl Path {
                 let new_path = repl_beg(&add_trailing_separator(&t), &s, "");
                 return Path::new(new_path);
             }
-        }
-
-        if t.len() < s.len() {
+        } else if t.len() < s.len() {
             if t.starts_with(&s) {
                 let new_path = repl_beg(&add_trailing_separator(&s), &t, "");
                 return Path::new(new_path);
             }
-        }
-
-        if s.len() < t.len() {
+        } else if s.len() < t.len() {
             if t.starts_with(&s) {
                 let t_without_s =
                     remove_trailing_slash(&remove_start(&add_trailing_separator(&s), &t));
                 let sub_path = path_str_to_relative_subpath(&t_without_s);
                 return Path::raw(sub_path);
             }
+        } else {
+            todo!("please open an issue at https://github.com/gabrielfalcao/iocore/issues or submit a pull-request with instructions of how to reproduce the current scenario:\nself.relative_to(other) where self={} and other={}", self.to_string(), t.to_string());
         }
         let new_path = Path::raw(&t);
         return new_path;
@@ -335,7 +334,7 @@ impl Path {
 
     pub fn with_filename(&self, name: impl std::fmt::Display) -> Path {
         let name = name.to_string();
-        self.parent().map(|p| p.join(&name)).unwrap_or_else(|| Path::new(&name))
+        self.parent().map(|p| p.join(&name)).unwrap_or_else(|| Path::raw(&name))
     }
 
     pub fn rename(
